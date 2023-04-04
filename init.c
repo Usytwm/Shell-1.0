@@ -1,4 +1,148 @@
 #include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <io.h>
+#define MAX_LINE_LENGTH 1024
+#include <Windows.h>
+#include <tchar.h>
+#include <direct.h>
+
+#include <sys/types.h>
+
+#define MAX_ARGS 10
+#define MAX_CMD_LEN 100
+#define O_RDONLY 0
+#define O_WRONLY 1
+#define O_CREAT 2
+#define O_TRUNC 3
+#define O_APPEND 4
+
+int main()
+{
+    char cmd[MAX_CMD_LEN];
+    char *args[MAX_ARGS];
+    int arg_count;
+    int pid;
+    int status;
+    int fd;
+
+    while (1)
+    {
+        // Limpiar los argumentos de la última ejecución.
+        for (int i = 0; i < MAX_ARGS; i++)
+        {
+            args[i] = NULL;
+        }
+
+        // Leer la línea de comando.
+        printf("my-prompt $ ");
+        fgets(cmd, MAX_CMD_LEN, stdin);
+        if (cmd[strlen(cmd) - 1] == '\n')
+        {
+            cmd[strlen(cmd) - 1] = '\0';
+        }
+
+        // Parsear los argumentos.
+        arg_count = 0;
+        args[arg_count] = strtok(cmd, " ");
+        while (args[arg_count] != NULL)
+        {
+            arg_count++;
+            args[arg_count] = strtok(NULL, " ");
+        }
+
+        // Verificar si se introdujo un comando.
+        if (arg_count == 0)
+        {
+            continue;
+        }
+
+        // Verificar si se introdujo el comando 'exit'.
+        if (strcmp(args[0], "exit") == 0)
+        {
+            break;
+        }
+
+        // Verificar si se introdujo el comando 'cd'.
+        if (strcmp(args[0], "cd") == 0)
+        {
+            chdir(args[1]);
+            continue;
+        }
+
+        // Verificar si se introdujo una entrada o salida redirigida.
+        fd = -1;
+        for (int i = 0; i < arg_count; i++)
+        {
+
+            if (strcmp(args[i], "<") == 0)
+            {
+                fd = open(args[i + 1], O_RDONLY);
+                if (fd < 0)
+                {
+                    perror("open");
+                    continue;
+                }
+                dup2(fd, 0);
+                close(fd);
+                args[i] = NULL;
+                i++;
+            }
+            else if (strcmp(args[i], ">") == 0)
+            {
+                fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                if (fd < 0)
+                {
+                    perror("open");
+                    continue;
+                }
+                dup2(fd, 1);
+                close(fd);
+                args[i] = NULL;
+                i++;
+            }
+            else if (strcmp(args[i], ">>") == 0)
+            {
+                fd = open(args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666);
+                if (fd < 0)
+                {
+                    perror("open");
+                    continue;
+                }
+                dup2(fd, 1);
+                close(fd);
+                args[i] = NULL;
+                i++;
+            }
+        }
+
+        // Crear un proceso hijo para ejecutar el comando.
+        PROCESS_INFORMATION pi;
+        STARTUPINFO si;
+        ZeroMemory(&pi, sizeof(pi));
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        pid = CreateProcess(args[0], args, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+        if (pid < 0)
+        {
+            perror("fork");
+        }
+        else if (pid == 0)
+        {
+            // Este es el proceso hijo.
+            exit(1);
+        }
+        else
+        {
+            // Este es el proceso padre.
+            waitpid(pid, &status, 0);
+        }
+        WaitForSingleObject(pi.hProcess, INFINITE);
+    }
+    return 0;
+}
 // Make a shell with pipes?
 
 /*
@@ -43,14 +187,13 @@
     mkdir()
 */
 
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <unistd.h>
+/*#include <sys/types.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <dirent.h>
+
 #include <sys/stat.h>
 #define BUFSIZE 1024
 #define MAXARGNUM 32
@@ -134,7 +277,7 @@ char **splitline(char *line)
     }
 
     token = strtok(line, DELIMITER);
-    while (token != NULL)
+ /*   while (token != NULL)
     {
         if (token[0] == '*' || token[strlen(token) - 1] == '*')
         {
@@ -895,4 +1038,4 @@ int main(int argc, char **argv)
     free(history);
     free(aliaslist);
     return EXIT_SUCCESS;
-}
+}*/
