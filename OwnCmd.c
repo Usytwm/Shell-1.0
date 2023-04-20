@@ -6,9 +6,14 @@
 #include <sys/types.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define MAXCOM 1000 // Número máximo de letras que se admitirán
 #define MAXLIST 100 // Número máximo de comandos que se admitirán
+
 void init_shell();
 void printDir();
 int takeInput(char *str);
@@ -19,30 +24,107 @@ void execArgsPiped(char **parsed, char **parsedpipe);
 // Borrado del shell mediante secuencias de escape
 #define clear() printf("\033[H\033[J")
 
+int Estandarizacion(int argc, char *argv[])
+{
+    int fd_in, fd_out;
+
+    // Abrir el archivo de entrada
+    fd_in = open("input.txt", O_RDONLY);
+    if (fd_in == -1)
+    {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    // Redirigir la entrada estándar a partir del archivo de entrada
+    if (dup2(fd_in, STDIN_FILENO) == -1)
+    {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+
+    // Crear o abrir el archivo de salida
+    fd_out = open("output.txt", O_WRONLY | O_CREAT | O_TRUNC);
+    if (fd_out == -1)
+    {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    // Redirigir la salida estándar hacia el archivo de salida
+    if (dup2(fd_out, STDOUT_FILENO) == -1)
+    {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+
+    // Ejecutar el comando "sort"
+    char *args[] = {"sort", NULL};
+    if (execvp(args[0], args) == -1)
+    {
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;
+}
 // Shell durante el inicio
 void init_shell()
 {
     clear();
-    char *username = getenv("USER");
+    char *username = getenv("USER"); // genera el usuario
     printf("USER is: @%s", username);
     printf("\n");
     sleep(1);
     clear();
 }
 
+// funcion para quitar los espacios de mas
+void removeExtraSpaces(char *str)
+{
+    int i, j;
+    int len = strlen(str);
+    int count = 0;
+    int count2 = 0;
+    for (i = 0, j = 0; i < len; i++)
+    {
+       
+        if (str[i] == '"' && !count )
+        {
+            count = 1;
+            j++;
+            continue;
+        }
+        if(count)j++;
+        if (str[i] == '"' && count)
+        {
+            count = 0;
+            
+        }
+        if (!count)
+            if (str[i] != ' ' || (i > 0 && str[i - 1] != ' '))
+            {
+                str[j++] = str[i];
+            }
+    }
+    str[j] = '\0';
+}
+
 // Función para tomar entrada
 int takeInput(char *str)
 {
+    char *token;
     char *buf;
     buf = fgets(str, 1024, stdin);
+    // ARemover Espacios de mas
+    removeExtraSpaces(str);
     buf[strlen(buf) - 1] = '\0';
-    if (strlen(buf) != 0)
+    if (strlen(buf) != 0) // entrada valida
     {
-        // add_history(buf);
         strcpy(str, buf); // copiar una cadena de caracteres desde una ubicación de memoria a otra
         return 0;
     }
-    else
+    else // entrada invalida
     {
         return 1;
     }
@@ -65,14 +147,14 @@ void execArgs(char **parsed)
 
     if (pid == -1)
     {
-        printf("Failed forking child..");
+        printf("Failed forking child..\n");
         return;
     }
     else if (pid == 0)
     {
         if (execvp(parsed[0], parsed) < 0)
         {
-            printf("Could not execute command..");
+            printf("Could not execute command.. \n");
         }
         exit(0);
     }

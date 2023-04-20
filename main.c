@@ -1,18 +1,24 @@
 #include "OwnCmd.c" //comandos propios
 
+// freopen()
 int main()
 {
   char inputString[MAXCOM], *parsedArgs[MAXLIST];
   char *parsedArgsPiped[MAXLIST];
   int execFlag = 0;
+  char cmd[100];
+  char *args[MAXLIST + 1]; // +1 para NULL al final
+  int nargs = 0;
+  char *token;
   init_shell();
 
   while (1)
   {
+    char *args[MAXLIST + 1]; // +1 para NULL al final
+    int nargs = 0;
     // print shell line
-
     printDir();
-    // take input
+    // take inputnk
     if (takeInput(inputString))
       continue;
     // process
@@ -51,4 +57,3 @@ int main()
 #define MAXCOM 1000 // max number of letters to be supported
 #define MAXLIST 100 // max number of commands to be supported
 */
-
