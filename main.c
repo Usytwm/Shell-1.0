@@ -6,23 +6,30 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "methods.c"
-
+// gcc jeje.c -lreadline -o jeje
 #define MAX_COMMAND_LENGTH 100 // Longitud máxima del comando
 #define MAX_NUM_ARGUMENTS 10   // Número máximo de argumentos del comando
 #define MAX_HISTORY_LENGTH 10
 
 int main()
 {
-    int hist_count = 0;
-    char history[MAX_HISTORY_LENGTH][MAX_COMMAND_LENGTH];
+    /*// int hist_count = 0;
+    // char history[MAX_HISTORY_LENGTH][MAX_COMMAND_LENGTH];
+    //  char *input;*/
+    HISTORY_STATE *my_history;
+    // Inicializa el historial de comandos
+    my_history = history_get_history_state();
+    using_history();
+    // Establece el límite máximo de comandos en el historial
+    stifle_history(10);
 
-    for (int i = 0; i < MAX_HISTORY_LENGTH; i++)
+    /*for (int i = 0; i < MAX_HISTORY_LENGTH; i++)
     {
         for (int j = 0; j < MAX_COMMAND_LENGTH; j++)
         {
             history[i][j] = '\0';
         }
-    }
+    }*/
 
     char *command;                      // Puntero al comando ingresado por el usuario
     char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
@@ -35,20 +42,33 @@ int main()
 
     while (1) // Bucle infinito para leer comandos del usuario
     {
-        printf("my-prompt $ "); // Imprimir el prompt del shell
-        fflush(stdout);         // Limpiar el buffer de salida
-
+        /*// printf("my-prompt $ "); // Imprimir el prompt del shell
+        // fflush(stdout); // Limpiar el buffer de salida
+        // input = readline("myshell> ");
+        // add_history(input);*/
         command = calloc(MAX_COMMAND_LENGTH, sizeof(char)); // Asignar memoria para el comando
-        fgets(command, MAX_COMMAND_LENGTH, stdin);          // Leer el comando ingresado por el usuario
+        command = readline("my-prompt $ ");
+        /*// add_history(command);
+        // fgets(command, MAX_COMMAND_LENGTH, stdin);          // Leer el comando ingresado por el usuario
 
-        command[strlen(command) - 1] = '\0'; // Eliminar el salto de línea final
+        // command[strlen(command) - 1] = '\0'; // Eliminar el salto de línea final
+        */
 
         if (command[0] != ' ')
         {
             char *substring = "again";
             if (strncmp(command, substring, strlen(substring)) == 0)
             {
-                int k1 = command[strlen(substring) + 1] - '0';
+                HIST_ENTRY *comm = history_get(command[strlen(substring) + 1] - '0');
+                command = strdup(comm->line);
+                add_history(command);
+                /*if (comm != NULL)
+                {
+                    input = strdup(comm->line);
+                    printf("Ejecutando: %sn", input);
+                    system(input);
+                }
+                /int k1 = command[strlen(substring) + 1] - '0';
                 int k = hist_count - k1;
                 for (int j = hist_count; j > 0; j--)
                 {
@@ -60,11 +80,12 @@ int main()
                 if (hist_count < MAX_HISTORY_LENGTH)
                 {
                     hist_count++;
-                }
+                }*/
             }
             else
             {
-                for (int j = hist_count; j > 0; j--)
+                add_history(command);
+                /*for (int j = hist_count; j > 0; j--)
                 {
                     strcpy(history[j], history[j - 1]);
                 }
@@ -73,7 +94,7 @@ int main()
                 if (hist_count < MAX_HISTORY_LENGTH)
                 {
                     hist_count++;
-                }
+                }*/
             }
         }
 
@@ -104,9 +125,9 @@ int main()
 
         if (num_arguments > 0) // Si se ingresó un comando
         {
-            int std_status = std_method(arguments, num_arguments, history, background);
+            int std_status = std_method(arguments, num_arguments, background);
             if (std_status == 1)
-                built_in(arguments, num_arguments, history, background);
+                built_in(arguments, num_arguments, background);
         }
 
         free(command); // Liberar la memoria del comando

@@ -1,7 +1,5 @@
 {
     "files.associations": {
-        "types.h": "c",
-        "limits": "c",
-        "stdio.h": "c"
+        "unistd.h": "c"
     }
 }

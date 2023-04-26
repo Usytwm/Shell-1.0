@@ -2,14 +2,15 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: gcc-11 compilar archivo activo",
-            "command": "/usr/bin/gcc-11",
+            "label": "C/C++: gcc compilar archivo activo",
+            "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-lreadline"
             ],
             "options": {
                 "cwd": "${fileDirname}"
@@ -24,13 +25,25 @@
             "detail": "Tarea generada por el depurador."
         },
         {
-            "label": "build",
-            "type": "shell",
-            "command": "gcc -o ${workspaceFolder}/main ${workspaceFolder}/*.c",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "type": "cppbuild",
+            "label": "C/C++: gcc-11 compilar archivo activo",
+            "command": "/usr/bin/gcc-11",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-lreadline"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "Tarea generada por el depurador."
         }
     ],
     "version": "2.0.0"

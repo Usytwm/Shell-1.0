@@ -5,6 +5,8 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define MAX_HISTORY_LENGTH 10
 #define MAX_COMMAND_LENGTH 100
@@ -16,8 +18,8 @@
  * @param history Historial de comandos introducidos.
  * @param background Estado de segundo plano del proceso actual.
  * @return No devuelve nada.
-*/
-void built_in(char **arguments, int num_arguments, char history[][MAX_COMMAND_LENGTH], int background)
+ */
+void built_in(char **arguments, int num_arguments, int background)
 {
     int status; // Estado de finalización del proceso hijo
 
@@ -41,7 +43,15 @@ void built_in(char **arguments, int num_arguments, char history[][MAX_COMMAND_LE
     }
     else if (strcmp(arguments[0], "history") == 0)
     {
-        int counter = 1;
+        HIST_ENTRY **history_lis = history_list();
+        if (history_list != NULL)
+        {
+            for (int i = 0; history_lis[i] != NULL; i++)
+            {
+                printf("%d %s\n", i + 1, history_lis[i]->line);
+            }
+        }
+        /*int counter = 1;
         printf("COMMANDS HISTORY:\n");
         for (int x = MAX_HISTORY_LENGTH; x >= 0; x--)
         {
@@ -50,7 +60,7 @@ void built_in(char **arguments, int num_arguments, char history[][MAX_COMMAND_LE
                 printf("%d: %s\n", counter, history[x]);
                 counter++;
             }
-        }
+        }*/
     }
     else // Si el comando no es "exit" ni "cd"
     {
@@ -61,7 +71,7 @@ void built_in(char **arguments, int num_arguments, char history[][MAX_COMMAND_LE
             if (execvp(arguments[0], arguments) == -1) // Ejecutar el comando con los argumentos especificados
             {
                 printf("%s: command not found\n", arguments[0]); // Imprimir un mensaje de error si no se pudo ejecutar el comando
-                exit(1); // Salir del proceso hijo con un estado de finalización de 1
+                exit(1);                                         // Salir del proceso hijo con un estado de finalización de 1
             }
         }
         else if (pid > 0) // Si se está ejecutando en el proceso padre
@@ -85,8 +95,8 @@ void built_in(char **arguments, int num_arguments, char history[][MAX_COMMAND_LE
  * @param history Historial de comandos introducidos.
  * @param background Estado de segundo plano del proceso actual.
  * @return Devuelve 1 si no encontro coincidencias y 0 e.o.c.
-*/
-int std_method(char **arguments, int num_arguments, char history[][MAX_COMMAND_LENGTH], int background)
+ */
+int std_method(char **arguments, int num_arguments, int background)
 {
     char *in_file, *out_file;
     int append = 0, in_fd, out_fd, status;
@@ -112,7 +122,7 @@ int std_method(char **arguments, int num_arguments, char history[][MAX_COMMAND_L
             arguments[i] = NULL;
         }
     }
-    
+
     if (in_file != NULL)
     {
         in_fd = open(in_file, O_RDONLY);
@@ -136,7 +146,7 @@ int std_method(char **arguments, int num_arguments, char history[][MAX_COMMAND_L
             dup2(in_fd, STDIN_FILENO);
 
             // Ejecutar el comando deseado
-            built_in(arguments, num_arguments, history, background);
+            built_in(arguments, num_arguments, background);
 
             // Si el comando falla, imprimir un mensaje de error
             perror("execvp");
@@ -177,7 +187,7 @@ int std_method(char **arguments, int num_arguments, char history[][MAX_COMMAND_L
             dup2(out_fd, STDOUT_FILENO);
 
             // Ejecutar el comando deseado
-            built_in(arguments, num_arguments, history, background);
+            built_in(arguments, num_arguments, background);
 
             // Si el comando falla, imprimir un mensaje de error
             perror("execvp");
