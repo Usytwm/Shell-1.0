@@ -23,11 +23,11 @@ Una vez que el shell está en funcionamiento, el usuario puede ingresar comandos
 El shell admite los siguientes operadores:
 
 - | - Tubería, permite redirigir la salida de un comando a la entrada de otro.
-- '<' - Redirecciona la entrada de un comando desde un archivo.
+- &lt; - Redirecciona la entrada de un comando desde un archivo.
 
-- '>' - Redirecciona la salida de un comando a un archivo.
+- &gt; - Redirecciona la salida de un comando a un archivo.
 
-- '>>' - Anexa la salida de un comando a un archivo existente.
+- &gt;&gt; - Anexa la salida de un comando a un archivo existente.
 
 ## Créditos
 
