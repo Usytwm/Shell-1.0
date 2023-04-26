@@ -209,3 +209,46 @@ int std_method(char **arguments, int num_arguments, int background)
         return 1;
     return 0;
 }
+
+int pipes_util(char **arguments, int num_arguments,
+               int background, int input_fd, int output_fd)
+{
+    int status;
+    pid_t pid = fork();
+
+    if (pid == 0)
+    {
+        // child process
+        if (input_fd != STDIN_FILENO)
+        {
+            dup2(input_fd, STDIN_FILENO);
+            close(input_fd);
+        }
+        if (output_fd != STDOUT_FILENO)
+        {
+            dup2(output_fd, STDOUT_FILENO);
+            close(output_fd);
+        }
+
+        if (num_arguments > 0) // Si se ingresó un comando
+        {
+            int std_status = std_method(arguments, num_arguments, background);
+            if (std_status == 1)
+                built_in(arguments, num_arguments, background);
+        }
+
+        perror("execvp");
+        exit(1);
+    }
+    else if (pid > 0)
+    {
+        // parent process
+        waitpid(pid, &status, 0);
+        return WEXITSTATUS(status);
+    }
+    else
+    {
+        perror("fork failed");
+        return -1;
+    }
+}
