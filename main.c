@@ -10,13 +10,14 @@
 #define MAX_COMMAND_LENGTH 100 // Longitud máxima del comando
 #define MAX_NUM_ARGUMENTS 10   // Número máximo de argumentos del comando
 #define MAX_HISTORY_LENGTH 10
-
+//stty sane
 int main()
 {
     /*// int hist_count = 0;
     // char history[MAX_HISTORY_LENGTH][MAX_COMMAND_LENGTH];
     //  char *input;*/
     HISTORY_STATE *my_history;
+    read_history(".myshell_history");
     // Inicializa el historial de comandos
     my_history = history_get_history_state();
     using_history();
