@@ -9,6 +9,7 @@
 #include <readline/history.h>
 
 #define MAX_HISTORY_LENGTH 10
+#define MAX_NUM_ARGUMENTS 10
 #define MAX_COMMAND_LENGTH 100
 
 /**
@@ -52,16 +53,6 @@ void built_in(char **arguments, int num_arguments, int background)
                 printf("%d %s\n", i + 1, history_lis[i]->line);
             }
         }
-        /*int counter = 1;
-        printf("COMMANDS HISTORY:\n");
-        for (int x = MAX_HISTORY_LENGTH; x >= 0; x--)
-        {
-            if (strlen(history[x]) > 0)
-            {
-                printf("%d: %s\n", counter, history[x]);
-                counter++;
-            }
-        }*/
     }
     else // Si el comando no es "exit" ni "cd"
     {
@@ -250,5 +241,28 @@ int pipes_util(char **arguments, int num_arguments,
     {
         perror("fork failed");
         return -1;
+    }
+}
+
+void tokenized(char *token, char *parsed_arguments, int background)
+{
+    char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
+    int num_arguments = 0; // Inicializar el número de argumentos
+
+    token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
+
+    while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
+    {
+        arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
+        num_arguments++; // Incrementar el número de argumentos
+        token = strtok(NULL, " "); // Obtener el siguiente token del comando
+    }
+    arguments[num_arguments] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
+
+    if (num_arguments > 0) // Si se ingresó un comando
+    {
+        int std_status = std_method(arguments, num_arguments, background);
+        if (std_status == 1)
+            built_in(arguments, num_arguments, background);
     }
 }
