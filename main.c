@@ -58,8 +58,6 @@ int main()
         }
         parsed_arguments[num_tok] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
 
-        //int input_fd = STDIN_FILENO;
-        //int output_fd = STDOUT_FILENO;
         int index = 0;
 
         while(parsed_arguments[index] != NULL)
