@@ -44,6 +44,18 @@ int main()
                 add_history(command);
             }
         }
+        for (int i = 0; i < strlen(command); i++)
+        {
+            if (command[i] == '#')
+            {
+                for (int j = i; j < strlen(command); j++)
+                {
+                    command[j] = '\0';
+                }
+                break;
+            }
+        }
+        
 
         background = 0; // Inicializar el indicador de ejecución en segundo plano
         num_tok = 0;
@@ -60,7 +72,7 @@ int main()
 
         int index = 0;
 
-        while(parsed_arguments[index] != NULL)
+        while(parsed_arguments[index] != NULL && index < MAX_NUM_ARGUMENTS - 1)
         {
             tokenized(token, parsed_arguments[index], background);
             index++;

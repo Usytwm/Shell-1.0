@@ -248,17 +248,53 @@ int pipes_util(char **arguments, int num_arguments,
     }
 }
 
+int tokenized_util(char **arguments, int *last_null, int num_arguments, int background)
+{
+    char *auxiliar1[MAX_NUM_ARGUMENTS];
+    int i = *last_null + 1;
+    int len = 0;
+    *last_null = num_arguments;
+    while (i < num_arguments)
+    {
+        auxiliar1[len] = arguments[i];
+        i++;
+        len++;
+    }
+    auxiliar1[len] = NULL;
+
+    int std_status = std_method(auxiliar1, len, background);
+    if (std_status == 1)
+        std_status = built_in(auxiliar1, len, background);
+    
+    return std_status;
+}
+
 void tokenized(char *token, char *parsed_arguments, int background)
 {
     int status = 0;
     char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
     int num_arguments = 0; // Inicializar el número de argumentos
+    int last_null = -1;
 
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
     while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
     {
         arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
+        if (strcmp(token, "&&") == 0)
+        {
+            int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+            if (std_status == 1)
+                return;
+        }
+        if (strcmp(token, "||") == 0)
+        {
+            int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+            if (std_status == 1)
+            {
+                
+            }
+        }
         num_arguments++; // Incrementar el número de argumentos
         token = strtok(NULL, " "); // Obtener el siguiente token del comando
     }
@@ -266,8 +302,6 @@ void tokenized(char *token, char *parsed_arguments, int background)
 
     if (num_arguments > 0) // Si se ingresó un comando
     {
-        int std_status = std_method(arguments, num_arguments, background);
-        if (std_status == 1)
-            std_status = built_in(arguments, num_arguments, background);
+        tokenized_util(arguments, &last_null, num_arguments, background);
     }
 }
