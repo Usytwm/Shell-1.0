@@ -18,7 +18,6 @@ int main()
     stifle_history(MAX_HISTORY_LENGTH);
 
     char *command;                      // Puntero al comando ingresado por el usuario
-    char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
     char *parsed_arguments[MAX_NUM_ARGUMENTS];
     char *token;                        // Puntero al token actual
     int num_tok;
@@ -74,7 +73,7 @@ int main()
 
         while(parsed_arguments[index] != NULL && index < MAX_NUM_ARGUMENTS - 1)
         {
-            tokenized(token, parsed_arguments[index], background);
+            tokenized(parsed_arguments[index], background);
             index++;
         }
         free(command); // Liberar la memoria del comando

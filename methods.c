@@ -29,6 +29,16 @@ int built_in(char **arguments, int num_arguments, int background)
         write_history(".myshell_history");
         exit(0); // Salir del shell
     }
+    else if (strcmp(arguments[0], "true") == 0)
+    {
+        write_history(".myshell_history");
+        exit(0);
+    }
+    else if (strcmp(arguments[0], "false") == 0)
+    {
+        write_history(".myshell_history");
+        exit(1);
+    }
     else if (strcmp(arguments[0], "cd") == 0) // Si el comando es "cd"
     {
         if (num_arguments > 1) // Si se especificó un directorio
@@ -269,18 +279,26 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
     return std_status;
 }
 
-void tokenized(char *token, char *parsed_arguments, int background)
+void tokenized(char *parsed_arguments, int background)
 {
+    char *token;
     int status = 0;
     char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
     int num_arguments = 0; // Inicializar el número de argumentos
     int last_null = -1;
+    int or_status = 0;
 
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
     while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
     {
+        if (or_status == 1)
+        {
+            return;
+        }
+        
         arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
+        
         if (strcmp(token, "&&") == 0)
         {
             int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
@@ -290,9 +308,9 @@ void tokenized(char *token, char *parsed_arguments, int background)
         if (strcmp(token, "||") == 0)
         {
             int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
-            if (std_status == 1)
+            if (std_status == 0)
             {
-                
+                or_status = 1;
             }
         }
         num_arguments++; // Incrementar el número de argumentos
