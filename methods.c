@@ -9,6 +9,7 @@
 #include <readline/history.h>
 
 #define MAX_HISTORY_LENGTH 10
+#define MAX_NUM_ARGUMENTS 10
 #define MAX_COMMAND_LENGTH 100
 
 /**
@@ -17,9 +18,9 @@
  * @param num_arguments Numero de argumentos tokenizados.
  * @param history Historial de comandos introducidos.
  * @param background Estado de segundo plano del proceso actual.
- * @return No devuelve nada.
+ * @return Devuelve 1 si hubo algun error y 0 e.o.c.
  */
-void built_in(char **arguments, int num_arguments, int background)
+int built_in(char **arguments, int num_arguments, int background)
 {
     int status; // Estado de finalización del proceso hijo
 
@@ -35,11 +36,13 @@ void built_in(char **arguments, int num_arguments, int background)
             if (chdir(arguments[1]) != 0) // Cambiar al directorio especificado
             {
                 printf("cd: %s: No such file or directory\n", arguments[1]); // Imprimir un mensaje de error si no se pudo cambiar al directorio
+                return 1;
             }
         }
         else // Si no se especificó un directorio
         {
             printf("cd: The function requires an argument\n");
+            return 1;
         }
     }
     else if (strcmp(arguments[0], "history") == 0)
@@ -52,16 +55,6 @@ void built_in(char **arguments, int num_arguments, int background)
                 printf("%d %s\n", i + 1, history_lis[i]->line);
             }
         }
-        /*int counter = 1;
-        printf("COMMANDS HISTORY:\n");
-        for (int x = MAX_HISTORY_LENGTH; x >= 0; x--)
-        {
-            if (strlen(history[x]) > 0)
-            {
-                printf("%d: %s\n", counter, history[x]);
-                counter++;
-            }
-        }*/
     }
     else // Si el comando no es "exit" ni "cd"
     {
@@ -72,21 +65,23 @@ void built_in(char **arguments, int num_arguments, int background)
             if (execvp(arguments[0], arguments) == -1) // Ejecutar el comando con los argumentos especificados
             {
                 printf("%s: command not found\n", arguments[0]); // Imprimir un mensaje de error si no se pudo ejecutar el comando
-                exit(1);                                         // Salir del proceso hijo con un estado de finalización de 1
+                return 1;                                         // Salir del proceso hijo con un estado de finalización de 1
             }
         }
         else if (pid > 0) // Si se está ejecutando en el proceso padre
         {
             if (!background) // Si el comando no se está ejecutando en segundo plano
-            {
                 waitpid(pid, &status, 0); // Esperar a que el proceso hijo termine
-            }
+            else
+                wait(NULL);
         }
         else // Si no se pudo crear el proceso hijo
         {
             printf("fork: Unable to create child process\n"); // Imprimir un mensaje de error
+            return 1;
         }
     }
+    return 0;
 }
 
 /**
@@ -250,5 +245,29 @@ int pipes_util(char **arguments, int num_arguments,
     {
         perror("fork failed");
         return -1;
+    }
+}
+
+void tokenized(char *token, char *parsed_arguments, int background)
+{
+    int status = 0;
+    char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
+    int num_arguments = 0; // Inicializar el número de argumentos
+
+    token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
+
+    while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
+    {
+        arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
+        num_arguments++; // Incrementar el número de argumentos
+        token = strtok(NULL, " "); // Obtener el siguiente token del comando
+    }
+    arguments[num_arguments] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
+
+    if (num_arguments > 0) // Si se ingresó un comando
+    {
+        int std_status = std_method(arguments, num_arguments, background);
+        if (std_status == 1)
+            std_status = built_in(arguments, num_arguments, background);
     }
 }

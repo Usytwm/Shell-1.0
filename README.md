@@ -31,4 +31,4 @@ El shell admite los siguientes operadores:
 
 ## Créditos
 
-Este shell fue creado por Brian Ameht Inclan Quesada, Dariel Martinez Perez, Eric Lopez de Tornas y se basa en el trabajo de Stephen Brennan en el proyecto [LSH](https://github.com/brenns10/lsh). Se utiliza la biblioteca readline para autocompletado y sugerencias de comandos.
+Este shell fue creado por Brian Ameht Inclan Quesada, Dariel Martinez Perez, Eric Lopez Tornas. Se utiliza la biblioteca readline para autocompletado y sugerencias de comandos.
