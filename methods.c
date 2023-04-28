@@ -108,7 +108,7 @@ int built_in(char **arguments, int num_arguments, int background)
         else if (pid > 0) // Si se está ejecutando en el proceso padre
         {
             if (!background) // Si el comando no se está ejecutando en segundo plano
-                wait(&status); // Esperar a que el proceso hijo termine
+                waitpid(pid, &status, 0); // Esperar a que el proceso hijo termine
             else
                 wait(NULL);
         }
@@ -376,7 +376,7 @@ void tokenized(char *parsed_arguments, int background)
                 last_null = last_null + 1;
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
                 arguments[last_null] = NULL;
-                if (std_status == 0)
+                if (std_status == 1)
                 {
                     else_status = 1;
                 }
@@ -386,11 +386,10 @@ void tokenized(char *parsed_arguments, int background)
         }
         else if (strcmp(token, "else") == 0)
         {
-            if (else_status = 0)
+            if (else_status == 1)
             {
                 last_null = num_arguments;
                 arguments[last_null] = NULL;
-                else_status = 0;
             }
             else
             {
@@ -407,9 +406,10 @@ void tokenized(char *parsed_arguments, int background)
                 arguments[last_null] = NULL;
                 if_status -= 1;
             }
-            else if (else_status == 0)
+            else if (else_status == 1)
             {
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+                arguments[last_null] = NULL;
                 else_status = 0;
                 if_status -= 1;
             }
@@ -425,7 +425,7 @@ void tokenized(char *parsed_arguments, int background)
     if (if_status > 0)
     {
         printf("Fatal error: \"end\" command is missing\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     if (num_arguments > 0 && arguments[num_arguments - 1] != NULL) // Si se ingresó un comando
