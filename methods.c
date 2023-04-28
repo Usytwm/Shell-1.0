@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -16,7 +17,6 @@
  * @brief El metodo se encarga de revisar si la entrada del usuario corresponde a algun comando.
  * @param arguments Matriz con la entrada tokenizada del usuario.
  * @param num_arguments Numero de argumentos tokenizados.
- * @param history Historial de comandos introducidos.
  * @param background Estado de segundo plano del proceso actual.
  * @return Devuelve 1 si hubo algun error y 0 e.o.c.
  */
@@ -28,16 +28,6 @@ int built_in(char **arguments, int num_arguments, int background)
     {
         write_history(".myshell_history");
         exit(0); // Salir del shell
-    }
-    else if (strcmp(arguments[0], "true") == 0)
-    {
-        write_history(".myshell_history");
-        exit(0);
-    }
-    else if (strcmp(arguments[0], "false") == 0)
-    {
-        write_history(".myshell_history");
-        exit(1);
     }
     else if (strcmp(arguments[0], "cd") == 0) // Si el comando es "cd"
     {
@@ -54,6 +44,7 @@ int built_in(char **arguments, int num_arguments, int background)
             printf("cd: The function requires an argument\n");
             return 1;
         }
+        return 0;
     }
     else if (strcmp(arguments[0], "history") == 0)
     {
@@ -65,7 +56,43 @@ int built_in(char **arguments, int num_arguments, int background)
                 printf("%d %s\n", i + 1, history_lis[i]->line);
             }
         }
+        return 0;
     }
+    /*else if (strcmp(arguments[0], "ls") == 0)
+    {
+        DIR *dir;
+        struct dirent *ent;
+
+        if ((dir = opendir(".")) != NULL)
+        {
+            // leer todos los archivos en el directorio actual
+            while ((ent = readdir(dir)) != NULL) {
+                printf("%s\n", ent->d_name);
+            }
+            closedir(dir);
+        }
+        else 
+        {
+            // si no se puede abrir el directorio, imprimir un mensaje de error
+            perror("ls");
+            return 1;
+        }
+        return 0;
+    }
+    else if (strcmp(arguments[0], "pwd") == 0)
+    {
+        char cwd[1024];
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+        {
+            printf("%s\n", cwd);
+        }
+        else
+        {
+            perror("getcwd() error");
+            return 1;
+        }
+        return 0;
+    }*/
     else // Si el comando no es "exit" ni "cd"
     {
         pid_t pid = fork(); // Crear un nuevo proceso hijo
@@ -81,7 +108,7 @@ int built_in(char **arguments, int num_arguments, int background)
         else if (pid > 0) // Si se está ejecutando en el proceso padre
         {
             if (!background) // Si el comando no se está ejecutando en segundo plano
-                waitpid(pid, &status, 0); // Esperar a que el proceso hijo termine
+                wait(&status); // Esperar a que el proceso hijo termine
             else
                 wait(NULL);
         }
@@ -90,15 +117,15 @@ int built_in(char **arguments, int num_arguments, int background)
             printf("fork: Unable to create child process\n"); // Imprimir un mensaje de error
             return 1;
         }
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 /**
  * @brief El metodo se encarga de revisar si la entrada del usuario contiene >, <, >>.
  * @param arguments Matriz con la entrada tokenizada del usuario.
  * @param num_arguments Numero de argumentos tokenizados.
- * @param history Historial de comandos introducidos.
  * @param background Estado de segundo plano del proceso actual.
  * @return Devuelve 1 si no encontro coincidencias y 0 e.o.c.
  */
@@ -215,6 +242,15 @@ int std_method(char **arguments, int num_arguments, int background)
     return 0;
 }
 
+/**
+ * @brief El metodo se encarga de procesar los pipes en la entrada.
+ * @param arguments Matriz con la entrada tokenizada del usuario.
+ * @param num_arguments Numero de argumentos tokenizados.
+ * @param background Estado de segundo plano del proceso actual.
+ * @param input_fd File descriptor de la entrada.
+ * @param output_fd File descriptor de la salida.
+ * @return 
+*/
 int pipes_util(char **arguments, int num_arguments,
                int background, int input_fd, int output_fd)
 {
@@ -258,6 +294,14 @@ int pipes_util(char **arguments, int num_arguments,
     }
 }
 
+/**
+ * @brief El metodo se encarga de procesar cada comando simple o estandarizado.
+ * @param arguments Matriz con la entrada tokenizada del usuario.
+ * @param last_null Puntero al comienzo del comando.
+ * @param num_arguments Numero de argumentos tokenizados.
+ * @param background Estado de segundo plano del proceso actual.
+ * @return Devuelve 1 si ocurrio algun error y 0 e.o.c.
+*/
 int tokenized_util(char **arguments, int *last_null, int num_arguments, int background)
 {
     char *auxiliar1[MAX_NUM_ARGUMENTS];
@@ -279,6 +323,12 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
     return std_status;
 }
 
+/**
+ * @brief El metodo se encarga de parsear cada comando y ejecutarlo.
+ * @param parsed_arguments Matriz con la entrada tokenizada del usuario.
+ * @param background Estado de segundo plano del proceso actual.
+ * @return No devuelve nada.
+*/
 void tokenized(char *parsed_arguments, int background)
 {
     char *token;
@@ -287,6 +337,10 @@ void tokenized(char *parsed_arguments, int background)
     int num_arguments = 0; // Inicializar el número de argumentos
     int last_null = -1;
     int or_status = 0;
+    int if_status = 0;
+    int else_status = 0;
+    int end_status = 0;
+    int not_else = 0;
 
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
@@ -305,7 +359,7 @@ void tokenized(char *parsed_arguments, int background)
             if (std_status == 1)
                 return;
         }
-        if (strcmp(token, "||") == 0)
+        else if (strcmp(token, "||") == 0)
         {
             int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
             if (std_status == 0)
@@ -313,12 +367,68 @@ void tokenized(char *parsed_arguments, int background)
                 or_status = 1;
             }
         }
+        else if (strcmp(token, "then") == 0)
+        {
+            if (strcmp(arguments[last_null + 1], "if") == 0)
+            {
+                if_status += 1;
+                arguments[last_null + 1] = NULL;
+                last_null = last_null + 1;
+                int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+                arguments[last_null] = NULL;
+                if (std_status == 0)
+                {
+                    else_status = 1;
+                }
+            }
+            else
+                printf("then: \"if\" command is missing\n");
+        }
+        else if (strcmp(token, "else") == 0)
+        {
+            if (else_status = 0)
+            {
+                last_null = num_arguments;
+                arguments[last_null] = NULL;
+                else_status = 0;
+            }
+            else
+            {
+                int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+                arguments[last_null] = NULL;
+                not_else = 1;
+            }
+        }
+        else if (strcmp(token, "end") == 0)
+        {
+            if (not_else == 1 && if_status > 0)
+            {
+                last_null = num_arguments;
+                arguments[last_null] = NULL;
+                if_status -= 1;
+            }
+            else if (else_status == 0)
+            {
+                int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+                else_status = 0;
+                if_status -= 1;
+            }
+            if (if_status == 0)
+                not_else = 0;
+        }
+
         num_arguments++; // Incrementar el número de argumentos
         token = strtok(NULL, " "); // Obtener el siguiente token del comando
     }
     arguments[num_arguments] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
 
-    if (num_arguments > 0) // Si se ingresó un comando
+    if (if_status > 0)
+    {
+        printf("Fatal error: \"end\" command is missing\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (num_arguments > 0 && arguments[num_arguments - 1] != NULL) // Si se ingresó un comando
     {
         tokenized_util(arguments, &last_null, num_arguments, background);
     }
