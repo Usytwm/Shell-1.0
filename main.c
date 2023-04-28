@@ -5,10 +5,30 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "methods.c"
+
+int sigint_count = 0; // variable global para contar las veces que se ha recibido la señal SIGINT
+
+void sigint_handler(int sig_num)
+{
+    if (sigint_count == 0)
+    {
+        sigint_count++;
+        printf("\nPresione Ctrl-C nuevamente para salir o Enter para continuar.");
+        fflush(stdout);
+    }
+    else
+    {
+        printf("\nTerminando el programa.\n");
+        exit(EXIT_SUCCESS);
+    }
+}
 
 int main()
 {
+    signal(SIGINT, sigint_handler);
+
     HISTORY_STATE *my_history;
     read_history(".myshell_history");
     // Inicializa el historial de comandos
@@ -55,7 +75,6 @@ int main()
             }
         }
         
-
         background = 0; // Inicializar el indicador de ejecución en segundo plano
         num_tok = 0;
         

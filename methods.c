@@ -10,7 +10,7 @@
 #include <readline/history.h>
 
 #define MAX_HISTORY_LENGTH 10
-#define MAX_NUM_ARGUMENTS 10
+#define MAX_NUM_ARGUMENTS 50
 #define MAX_COMMAND_LENGTH 100
 
 /**
@@ -58,7 +58,7 @@ int built_in(char **arguments, int num_arguments, int background)
         }
         return 0;
     }
-    /*else if (strcmp(arguments[0], "ls") == 0)
+    else if (strcmp(arguments[0], "ls") == 0)
     {
         DIR *dir;
         struct dirent *ent;
@@ -92,8 +92,8 @@ int built_in(char **arguments, int num_arguments, int background)
             return 1;
         }
         return 0;
-    }*/
-    else // Si el comando no es "exit" ni "cd"
+    }
+    /*else // Si el comando no es "exit" ni "cd"
     {
         pid_t pid = fork(); // Crear un nuevo proceso hijo
 
@@ -118,7 +118,7 @@ int built_in(char **arguments, int num_arguments, int background)
             return 1;
         }
         return 0;
-    }
+    }*/
     return 1;
 }
 
@@ -304,17 +304,17 @@ int pipes_util(char **arguments, int num_arguments,
 */
 int tokenized_util(char **arguments, int *last_null, int num_arguments, int background)
 {
-    char *auxiliar1[MAX_NUM_ARGUMENTS];
-    int i = *last_null + 1;
-    int len = 0;
-    *last_null = num_arguments;
-    while (i < num_arguments)
+    char *auxiliar1[MAX_NUM_ARGUMENTS]; //construyo el comando simple que voy a procesar
+    int i = *last_null + 1; //creo un indice q empieza en el token siguiente al ultimo null
+    int len = 0; //creo un indice para ir construyendo auxiliar1
+    *last_null = num_arguments; //actualizo el ultimo null como el operador actual
+    while (i < num_arguments) //tomo todo lo que hay entre operador y operador
     {
-        auxiliar1[len] = arguments[i];
-        i++;
+        auxiliar1[len] = arguments[i]; //lo agrego a auxiliar 
+        i++; //aumento los indices
         len++;
     }
-    auxiliar1[len] = NULL;
+    auxiliar1[len] = NULL; //hago null la ultima posicion
 
     int std_status = std_method(auxiliar1, len, background);
     if (std_status == 1)
@@ -339,6 +339,7 @@ void tokenized(char *parsed_arguments, int background)
     int or_status = 0;
     int if_status = 0;
     int else_status = 0;
+    int else_before_end = 0;
     int end_status = 0;
     int not_else = 0;
 
@@ -371,50 +372,66 @@ void tokenized(char *parsed_arguments, int background)
         {
             if (strcmp(arguments[last_null + 1], "if") == 0)
             {
-                if_status += 1;
-                arguments[last_null + 1] = NULL;
-                last_null = last_null + 1;
+                if_status += 1; //esto me da cuantos if tengo actualmente
+                arguments[last_null + 1] = NULL; //donde estaba el if meti un null
+                last_null = last_null + 1; //actualizo el ultimo null
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
-                arguments[last_null] = NULL;
-                if (std_status == 1)
-                {
-                    else_status = 1;
-                }
+                //arguments[last_null] = NULL; //pongo un null donde estaba el then
+                else_status = 0; //actualizo los estados de else 
+                else_before_end = 0; //para el nuevo bloque de if
+                if (std_status == 1) //si hubo un error en la condicion
+                    else_status = 1; //actualizo el else para que se ejecute
+                else
+                    end_status = 1; //actualizo el end para que se ejecute si no hay else
             }
             else
                 printf("then: \"if\" command is missing\n");
         }
         else if (strcmp(token, "else") == 0)
         {
-            if (else_status == 1)
+            else_before_end = 1;
+            if (else_status == 1) //si hubo error en la condicion
             {
-                last_null = num_arguments;
-                arguments[last_null] = NULL;
+                last_null = num_arguments; //last_null ahora es el else
+                //arguments[last_null] = NULL; //hago null el operador else en arguments
             }
-            else
+            else //si no hubo error
             {
-                int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
-                arguments[last_null] = NULL;
-                not_else = 1;
+                int std_status = tokenized_util(arguments, &last_null, num_arguments, background); //ejecuto el comando entre then y else
+                //arguments[last_null] = NULL; //hago null el operador else en arguments
+                not_else = 1; //actualizo el estado de no ejecutar lo que hay en el else
             }
         }
         else if (strcmp(token, "end") == 0)
         {
-            if (not_else == 1 && if_status > 0)
+            if (not_else == 1 && if_status > 0) //si no hay que ejecutar el contenido del else y hubo un if al menos
             {
-                last_null = num_arguments;
-                arguments[last_null] = NULL;
-                if_status -= 1;
+                last_null = num_arguments; //last_null es el end actual
+                //arguments[last_null] = NULL; //lo hago null en arguments
+                if_status -= 1; //quito un if de los que haya sin finalizar
             }
-            else if (else_status == 1)
+            else if (else_status == 1 && else_before_end == 1) //si hay que ejecutar el contenido del else
+            {
+                int std_status = tokenized_util(arguments, &last_null, num_arguments, background); //ejecuto el comando
+                //arguments[last_null] = NULL; //hago null el end actual en arguments
+                else_status = 0; //actualizo el else como ejecutado
+                if_status -= 1; //quito un if de los que haya sin finalizar
+            }
+            else if (end_status == 1 && else_before_end == 0 && strcmp(arguments[last_null], "end") != 0)
             {
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
-                arguments[last_null] = NULL;
-                else_status = 0;
                 if_status -= 1;
             }
-            if (if_status == 0)
-                not_else = 0;
+            else
+            {
+                last_null = num_arguments;
+                if_status -= 1;
+            }
+
+            if (if_status == 0) //si no quedan if por finalizar
+                not_else = 0; //actualizo el estado de los else
+            
+            else_before_end = 0;
         }
 
         num_arguments++; // Incrementar el número de argumentos
@@ -428,7 +445,7 @@ void tokenized(char *parsed_arguments, int background)
         exit(1);
     }
 
-    if (num_arguments > 0 && arguments[num_arguments - 1] != NULL) // Si se ingresó un comando
+    if (num_arguments > 0 && num_arguments - 1 != last_null) // Si se ingresó un comando
     {
         tokenized_util(arguments, &last_null, num_arguments, background);
     }
