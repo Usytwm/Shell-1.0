@@ -58,7 +58,7 @@ int built_in(char **arguments, int num_arguments, int background)
         }
         return 0;
     }
-    else if (strcmp(arguments[0], "ls") == 0)
+    /*else if (strcmp(arguments[0], "ls") == 0)
     {
         DIR *dir;
         struct dirent *ent;
@@ -92,8 +92,8 @@ int built_in(char **arguments, int num_arguments, int background)
             return 1;
         }
         return 0;
-    }
-    /*else // Si el comando no es "exit" ni "cd"
+    }*/
+    else // Si el comando no es "exit" ni "cd"
     {
         pid_t pid = fork(); // Crear un nuevo proceso hijo
 
@@ -118,7 +118,7 @@ int built_in(char **arguments, int num_arguments, int background)
             return 1;
         }
         return 0;
-    }*/
+    }
     return 1;
 }
 
@@ -342,6 +342,7 @@ void tokenized(char *parsed_arguments, int background)
     int else_before_end = 0;
     int end_status = 0;
     int not_else = 0;
+    int first_true = 0;
 
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
@@ -368,7 +369,7 @@ void tokenized(char *parsed_arguments, int background)
                 or_status = 1;
             }
         }
-        else if (strcmp(token, "then") == 0)
+        else if (strcmp(token, "then") == 0 && first_true == 0)
         {
             if (strcmp(arguments[last_null + 1], "if") == 0)
             {
@@ -376,44 +377,45 @@ void tokenized(char *parsed_arguments, int background)
                 arguments[last_null + 1] = NULL; //donde estaba el if meti un null
                 last_null = last_null + 1; //actualizo el ultimo null
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
-                //arguments[last_null] = NULL; //pongo un null donde estaba el then
                 else_status = 0; //actualizo los estados de else 
                 else_before_end = 0; //para el nuevo bloque de if
                 if (std_status == 1) //si hubo un error en la condicion
+                {
                     else_status = 1; //actualizo el else para que se ejecute
+                }
                 else
+                {
                     end_status = 1; //actualizo el end para que se ejecute si no hay else
+                    first_true = 1;
+                }
             }
             else
                 printf("then: \"if\" command is missing\n");
         }
-        else if (strcmp(token, "else") == 0)
+        else if (strcmp(token, "else") == 0 && first_true != 2)
         {
             else_before_end = 1;
             if (else_status == 1) //si hubo error en la condicion
             {
                 last_null = num_arguments; //last_null ahora es el else
-                //arguments[last_null] = NULL; //hago null el operador else en arguments
             }
             else //si no hubo error
             {
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background); //ejecuto el comando entre then y else
-                //arguments[last_null] = NULL; //hago null el operador else en arguments
                 not_else = 1; //actualizo el estado de no ejecutar lo que hay en el else
+                first_true = 2;
             }
         }
         else if (strcmp(token, "end") == 0)
         {
-            if (not_else == 1 && if_status > 0) //si no hay que ejecutar el contenido del else y hubo un if al menos
+            if (first_true > 0 || (not_else == 1 && if_status > 0)) //si no hay que ejecutar el contenido del else y hubo un if al menos
             {
                 last_null = num_arguments; //last_null es el end actual
-                //arguments[last_null] = NULL; //lo hago null en arguments
                 if_status -= 1; //quito un if de los que haya sin finalizar
             }
             else if (else_status == 1 && else_before_end == 1) //si hay que ejecutar el contenido del else
             {
                 int std_status = tokenized_util(arguments, &last_null, num_arguments, background); //ejecuto el comando
-                //arguments[last_null] = NULL; //hago null el end actual en arguments
                 else_status = 0; //actualizo el else como ejecutado
                 if_status -= 1; //quito un if de los que haya sin finalizar
             }
