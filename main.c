@@ -37,12 +37,7 @@ int main()
     // Establece el límite máximo de comandos en el historial
     stifle_history(MAX_HISTORY_LENGTH);
 
-    char *command;                      // Puntero al comando ingresado por el usuario
-    char *parsed_arguments[MAX_NUM_ARGUMENTS];
-    char *token;                        // Puntero al token actual
-    int num_tok;
-    int background;                     // Indicador de ejecución en segundo plano
-    pid_t pid;                          // Identificador del proceso hijo
+    char *command; // Puntero al comando ingresado por el usuario
 
     while (1) // Bucle infinito para leer comandos del usuario
     {
@@ -74,27 +69,9 @@ int main()
                 break;
             }
         }
+
+        parse_command(command);
         
-        background = 0; // Inicializar el indicador de ejecución en segundo plano
-        num_tok = 0;
-        
-        token = strtok(command, ";"); // Obtener el primer token del comando
-
-        while (token != NULL && num_tok < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
-        {
-            parsed_arguments[num_tok] = token; // Agregar el token al arreglo de argumentos
-            num_tok++; // Incrementar el número de argumentos
-            token = strtok(NULL, ";"); // Obtener el siguiente token del comando
-        }
-        parsed_arguments[num_tok] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
-
-        int index = 0;
-
-        while(parsed_arguments[index] != NULL && index < MAX_NUM_ARGUMENTS - 1)
-        {
-            tokenized(parsed_arguments[index], background);
-            index++;
-        }
         free(command); // Liberar la memoria del comando
     }
 
