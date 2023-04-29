@@ -251,8 +251,7 @@ int std_method(char **arguments, int num_arguments, int background)
  * @param output_fd File descriptor de la salida.
  * @return 
 */
-int pipes_util(char **arguments, int num_arguments,
-               int background, int input_fd, int output_fd)
+int pipes_util(char **arguments, int num_arguments, int background, int input_fd, int output_fd)
 {
     int status;
     pid_t pid = fork();
