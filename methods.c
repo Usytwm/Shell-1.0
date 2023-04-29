@@ -407,7 +407,7 @@ void tokenized(char *parsed_arguments, int background)
         }
         else if (strcmp(token, "end") == 0)
         {
-            if (first_true > 0 || (not_else == 1 && if_status > 0)) //si no hay que ejecutar el contenido del else y hubo un if al menos
+            if (first_true == 2 || (not_else == 1 && if_status > 0)) //si no hay que ejecutar el contenido del else y hubo un if al menos
             {
                 last_null = num_arguments; //last_null es el end actual
                 if_status -= 1; //quito un if de los que haya sin finalizar
