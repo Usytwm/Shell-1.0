@@ -43,14 +43,41 @@ int main()
         {
             char *substring = "again";
             if (strncmp(command, substring, strlen(substring)) == 0)
-            {
-                HIST_ENTRY *comm = history_get(command[strlen(substring) + 1] - '0');
-                command = strdup(comm->line);
+            { ///////////////////////////
+
+                FILE *fp;
+                char *line = malloc(strlen(command) + 1);
+                fp = fopen(".myshell_history", "r");
+                if (fp == NULL)
+                {
+                    printf("Error al abrir el archivo de historial.\n");
+                    return 1;
+                }
+                int pos = 1;
+                while (fgets(line, MAX_COMMAND_LENGTH, fp))
+                {
+                    if (command[strlen(substring) + 1] - '0' == pos)
+                    {
+                        memcpy(command, line, strlen(line) + 1);
+                        command[strlen(command) - 1] = '\0';
+                        break;
+                    }
+                    pos++;
+                }
+                fclose(fp);
+                ///////////////////////////////
+                // HIST_ENTRY *comm = history_get(command[strlen(substring) + 1] - '0');
+                // command = strdup(comm->line);
                 add_history(command);
+                write_history(".myshell_history");
             }
             else
             {
-                add_history(command);
+                if (strcmp(command, "") != 0)
+                {
+                    add_history(command);
+                    write_history(".myshell_history");
+                }
             }
         }
         for (int i = 0; i < strlen(command); i++)
@@ -66,7 +93,7 @@ int main()
         }
 
         parse_command(command);
-        
+
         free(command); // Liberar la memoria del comando
     }
 

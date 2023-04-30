@@ -168,7 +168,7 @@ int built_in(char **arguments, int num_arguments, int background)
 
     if (strcmp(arguments[0], "exit") == 0) // Si el comando es "exit"
     {
-        write_history(".myshell_history");
+        //write_history(".myshell_history");
         exit(0); // Salir del shell
     }
     else if (strcmp(arguments[0], "true") == 0)
