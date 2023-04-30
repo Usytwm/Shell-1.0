@@ -1,0 +1,5 @@
+
+This functionality ensures that the program will not terminate when using `ctrl+c`, but instead sends a `SIGINT` to the current process, which will decide whether to terminate or not. If you want to force close, you just need to press `ctrl+c` again at any point during the execution.
+
+It is important to note that once you press `ctrl+c`, the execution will always terminate if it is pressed again, regardless of how many operations have occurred between the two actions.
+

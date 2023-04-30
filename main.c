@@ -1,12 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <signal.h>
-#include "methods.c"
+#include <readline/readline.h>
+#include "parse_command.c"
+
+#define MAX_HISTORY_LENGTH 10
+#define MAX_COMMAND_LENGTH 100
 
 int sigint_count = 0; // variable global para contar las veces que se ha recibido la señal SIGINT
 
@@ -30,11 +27,9 @@ int main()
     signal(SIGINT, sigint_handler);
 
     HISTORY_STATE *my_history;
-    read_history(".myshell_history");
-    // Inicializa el historial de comandos
+    read_history(".myshell_history"); // Inicializa el historial de comandos
     my_history = history_get_history_state();
-    using_history();
-    // Establece el límite máximo de comandos en el historial
+    using_history(); // Establece el límite máximo de comandos en el historial
     stifle_history(MAX_HISTORY_LENGTH);
 
     char *command; // Puntero al comando ingresado por el usuario

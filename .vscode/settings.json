@@ -1,6 +1,14 @@
 {
     "files.associations": {
         "unistd.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stat.h": "c",
+        "dirent.h": "c",
+        "readline.h": "c",
+        "history.h": "c",
+        "string.h": "c",
+        "wait.h": "c",
+        "types.h": "c",
+        "stdlib.h": "c"
     }
 }

@@ -1,0 +1,3 @@
+
+The program allows for any amount of spaces between each argument in the input. This happens automatically when tokenizing the commands because the token() function uses " " as the separator.
+
