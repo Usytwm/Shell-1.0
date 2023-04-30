@@ -22,7 +22,7 @@ char *values[MAX_NUM_ARGUMENTS];
 /* Número de variables definidas */
 int num_vars = 0;
 
-pid_t pid_gen;//pid de los procesos
+pid_t pid;//pid de los procesos
 int il = 1;//para enumear los procesos en background a la hora de imprimirlos
 pid_t bg_pids[MAX_NUM_ARGUMENTS];//procesos en segundo plano
 int num_bg_pids = 0;//cantidad de procesos en egundo plano
@@ -160,10 +160,10 @@ int built_in(char **arguments, int num_arguments, int background)
 {
     int status; // Estado de finalización del proceso hijo
 
-    while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
+    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
     {
         printf("[%d] Done\n", il++);
-        fg(pid_gen);
+        fg(pid);
     }
 
     if (strcmp(arguments[0], "exit") == 0) // Si el comando es "exit"

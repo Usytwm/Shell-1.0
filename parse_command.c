@@ -54,7 +54,6 @@ void tokenized(char *parsed_arguments, int background)
 {
     char *operators[] = {"|", "||", "&&", NULL};
     char *token;
-    int status = 0;
     char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
     int num_arguments = 0; // Inicializar el número de argumentos
     int last_null = -1;
@@ -180,6 +179,7 @@ void tokenized(char *parsed_arguments, int background)
     if (piped != 0)
     {
         int fd[2];
+        int status;
 
         char *args1[MAX_NUM_ARGUMENTS]; //construyo el comando simple que voy a procesar
         int len1 = 0; //creo un indice para ir construyendo auxiliar1
@@ -192,29 +192,38 @@ void tokenized(char *parsed_arguments, int background)
         
         process_auxiliar(arguments, &aux1, num_arguments, args2, &len2);
 
-        if (pipe(fd) == -1)
-        {
-            fprintf(stderr, "Error creating pipe\n");
+        if (pipe(fd) == -1) {
+            fprintf(stderr, "Error: no se pudo crear el pipe\n");
             exit(EXIT_FAILURE);
         }
 
         pid_t pid = fork();
 
         if (pid == -1) {
-            perror("fork");
+            fprintf(stderr, "Error: no se pudo crear el proceso hijo\n");
             exit(EXIT_FAILURE);
         }
 
         if (pid == 0) {
             // Proceso hijo
-            close(fd[0]); // Cerramos el extremo de lectura del pipe
-            dup2(fd[1], STDOUT_FILENO); // Redirigimos la salida extremo de escritura del pipe
-            execvp(args1[0], args1); // Ejecutamos el primer comando
+            close(fd[0]); // Cerrar el extremo de lectura del pipe
+
+            dup2(fd[1], STDOUT_FILENO); // Redirigir la salida estándar al extremo de escritura del pipe
+
+            execvp(args1[0], args1); // Ejecutar el primer comando
+
+            exit(EXIT_FAILURE); // Salir del proceso hijo si no se pudo ejecutar el comando
         } else {
             // Proceso padre
-            close(fd[1]); // Cerramos el extremo de escritura del pipe
-            dup2(fd[0], STDIN_FILENO); // Redirigimos la entrada estándar al extremo de lectura del pipe
-            execvp(args2[0], args2); // Ejecutamos el segundo comando
+            close(fd[1]); // Cerrar el extremo de escritura del pipe
+
+            wait(&status);
+
+            dup2(fd[0], STDIN_FILENO); // Redirigir la entrada estándar al extremo de lectura del pipe
+
+            execvp(args2[0], args2); // Ejecutar el segundo comando
+
+            exit(EXIT_FAILURE); // Salir del proceso padre si no se pudo ejecutar el comando
         }
     }
 
