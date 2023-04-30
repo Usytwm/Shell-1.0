@@ -1,0 +1,5 @@
+
+The multi-pipe functionality allows for the execution of commands with multiple `|` and does not have a particularly special implementation.
+
+It is fundamentally based on the idea of executing the code prior to the operator as the input is tokenized, which ensures that it always takes the standard output of the previous command and converts it into the standard input of the next token.
+

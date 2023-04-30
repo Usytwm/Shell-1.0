@@ -1,33 +1,44 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include "methods.c"
+#include <signal.h>
+#include <readline/readline.h>
+#include "parse_command.c"
+
+#define MAX_HISTORY_LENGTH 10
+#define MAX_COMMAND_LENGTH 100
+
+int sigint_count = 0; // variable global para contar las veces que se ha recibido la señal SIGINT
+
+void sigint_handler(int sig_num)
+{
+    if (sigint_count == 0)
+    {
+        sigint_count++;
+        printf("\nPresione Ctrl-C nuevamente para salir o Enter para continuar.");
+        fflush(stdout);
+    }
+    else
+    {
+        printf("\nTerminando el programa.\n");
+        exit(EXIT_SUCCESS);
+    }
+}
 
 int main()
 {
+    signal(SIGINT, sigint_handler);
+
     HISTORY_STATE *my_history;
-    read_history(".myshell_history");
-    // Inicializa el historial de comandos
+    read_history(".myshell_history"); // Inicializa el historial de comandos
     my_history = history_get_history_state();
-    using_history();
-    // Establece el límite máximo de comandos en el historial
+    using_history(); // Establece el límite máximo de comandos en el historial
     stifle_history(MAX_HISTORY_LENGTH);
 
-    char *command;                      // Puntero al comando ingresado por el usuario
-    char *parsed_arguments[MAX_NUM_ARGUMENTS];
-    char *token;                        // Puntero al token actual
-    int num_tok;
-    int background;                     // Indicador de ejecución en segundo plano
-    pid_t pid;                          // Identificador del proceso hijo
+    char *command; // Puntero al comando ingresado por el usuario
 
     while (1) // Bucle infinito para leer comandos del usuario
     {
         command = calloc(MAX_COMMAND_LENGTH, sizeof(char)); // Asignar memoria para el comando
         command = readline("my-prompt $ ");
+
         if (command[0] != ' ')
         {
             char *substring = "again";
@@ -53,28 +64,9 @@ int main()
                 break;
             }
         }
+
+        parse_command(command);
         
-
-        background = 0; // Inicializar el indicador de ejecución en segundo plano
-        num_tok = 0;
-        
-        token = strtok(command, ";"); // Obtener el primer token del comando
-
-        while (token != NULL && num_tok < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
-        {
-            parsed_arguments[num_tok] = token; // Agregar el token al arreglo de argumentos
-            num_tok++; // Incrementar el número de argumentos
-            token = strtok(NULL, ";"); // Obtener el siguiente token del comando
-        }
-        parsed_arguments[num_tok] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
-
-        int index = 0;
-
-        while(parsed_arguments[index] != NULL && index < MAX_NUM_ARGUMENTS - 1)
-        {
-            tokenized(parsed_arguments[index], background);
-            index++;
-        }
         free(command); // Liberar la memoria del comando
     }
 

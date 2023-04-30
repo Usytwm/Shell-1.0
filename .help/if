@@ -1,0 +1,5 @@
+
+Conditional expressions have the form `if <argument> then <argument> else <argument> end`. In this declaration, the `else` is optional, but if any other operator is missing, an error will occur.
+
+The implementation evaluates, when the `then` operator is encountered, if there is an `if` at the beginning of the previous argument, it increases the `if_status` by 1, which ensures that it executes correctly and continues to the next command. If the output of the command before the `then` is 0, then it does not execute the `else`. Otherwise (there is no `else`), the implementation of the `end` ensures the execution of the second argument, or (there is an `else` and the output of the first argument was 1) the implementation of the `else` ensures the execution of the third argument.
+

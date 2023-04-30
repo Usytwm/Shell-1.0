@@ -1,0 +1,7 @@
+
+The multi-if functionality allows for the execution of commands with multiple nested conditionals.
+
+The implementation uses state variables to keep track of how many `if` statements are currently open and whether any of the conditions in them are met. These variables determine how many `ends` correspond to the closing of the declaration and whether or not the `else` statements need to be executed.
+
+At each step, the condition before the `then` statement is analyzed, and if it is met, the token after the then statement is returned. Otherwise, it continues to the `else/else if` statement and repeats the process until a output is obtained. If all conditions fail, nothing is returned.
+

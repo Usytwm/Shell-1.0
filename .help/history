@@ -1,0 +1,9 @@
+
+The history function allows you to view a list of the last 10 user inputs in the order they were entered, with the highest number in the list corresponding to the most recent input and the lowest to the oldest shown.
+
+The history is saved in a separate file from the program when it exits successfully and returns the previous inputs upon re-execution of the program.
+
+It is also possible to use the `again <number-of-input>` function to re-execute the command corresponding to the <number-of-input> in the history.
+
+The implementation uses the <readline/readline.h> and <readline/history.h> libraries to read the external file with the latest update of the history and save the last command through the add_history() function. The again function works as a simple command but outside of the built_in() method.
+

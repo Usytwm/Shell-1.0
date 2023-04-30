@@ -1,0 +1,21 @@
+
+Members: Dariel Martinez Perez, Brian Inclan Quesada, Eric Lopez Tornas (C311).
+
+Shell functions:
+
+basic: basic functions (3 points).
+multi-pipes: pipe function for multiple commands (1 point).
+background: function to execute commands in the background (0.5 points).
+spaces: allows any number of spaces in the input (0.5 points).
+history: shows the last 10 inputs (0.5 points).
+ctrl+c: allows the program to not be closed by pressing ctrl+c (0.5 points).
+chain: chain operators (0.5 points).
+if: conditional operators (1 point).
+multi-if: nested conditional operators (0.5 points).
+variables: allows declaring variables (1 point).
+help: shows this page (1 point).
+
+Total: 10 points.
+
+***If you want to know how works any of the shell functions, you must input: help <function-name>***
+

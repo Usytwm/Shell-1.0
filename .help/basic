@@ -1,0 +1,18 @@
+
+Our shell allows executing the following commands:
+
+- cd <new-directory>: changes the current directory to the directory specified in its argument.
+- exit: terminates the program with state 0 (exit-success).
+- #: starts a comment until the end of the current line.
+- execvp(): executes the commands corresponding to this C function (ls, pwd, grep, etc.).
+
+Each entered command must be separated by spaces from its argument and/or the next command.
+
+The implementation of these functionalities is in the built-in() method, which runs after the input is tokenized. Each simple function is processed in this method, which returns 0 if there are no errors and 1 if the command is not found or there was an execution failure.
+
+Our shell also allows executing the following operators:
+
+- <argument> (> ,< , >>) <argument>: redirects standard input and output (this is the operator with the lowest priority of all and is executed along with simple commands).
+- <argument> | <argument>: redirects the standard output of the first command to the input of the second.
+
+//////////////////////////////////////////////

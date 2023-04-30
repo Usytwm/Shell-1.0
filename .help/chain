@@ -1,0 +1,8 @@
+Our shell allows the use of the following operators:
+
+- <argument> ; <argument>: concatenates processes so that both are executed in the order in which they appear in the declaration (it has the lowest priority of all operators, so it is the first separator with respect to which tokenization occurs).
+- <argument> && <argument>: concatenates processes so that the second is executed only if the first did not have a failed output (it has the same priority as the rest of the operators).
+- <argument> || <argument>: concatenates processes in such a way that the second process is only executed if the first one had a failed output.
+
+The above operators are implemented in the input tokenization processes. They work by executing the first command and checking if the output meets its definition. If the first command passes the filter, then the second one is executed; otherwise, the execution is not performed.
+
