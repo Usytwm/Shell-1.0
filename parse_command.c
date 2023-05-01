@@ -175,6 +175,8 @@ void tokenized(char *parsed_arguments, int background)
     int first_true = 0;
     int piped = 0;
 
+    char *values = malloc(strlen(parsed_arguments) + 1); // asigno memoria para values
+    memcpy(values, parsed_arguments, strlen(parsed_arguments) + 1);
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
     while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
@@ -288,7 +290,7 @@ void tokenized(char *parsed_arguments, int background)
 
     if (piped != 0)
     {
-        if (Pipes(parsed_arguments, cmds, num_arguments, pipes) == EXIT_SUCCESS)
+        if (Pipes(values, cmds, 0, pipes) == EXIT_SUCCESS)
         {
             return;
         }
@@ -317,7 +319,7 @@ void parse_command(char *command)
     int num_tok = 0;
     int background = 0;
 
-    char *token = strtok(command, ";"); // Obtener el primer token del comando
+    char *token = strtok(command, ";");                      // Obtener el primer token del comando
     while (token != NULL && num_tok < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
     {
         parsed_arguments[num_tok] = token; // Agregar el token al arreglo de argumentos
