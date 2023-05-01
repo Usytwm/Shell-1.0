@@ -2,9 +2,7 @@
 #include <readline/readline.h>
 #include "parse_command.c"
 
-////////////////////////
 int sigint_count = 0; // variable global para contar las veces que se ha recibido la señal SIGINT
-
 
 void sigint_handler(int sig_num)
 {
@@ -42,8 +40,7 @@ int main()
         {
             char *substring = "again";
             if (strncmp(command, substring, strlen(substring)) == 0)
-            { ///////////////////////////
-
+            {
                 FILE *fp;
                 char *line = malloc(strlen(command) + 1);
                 fp = fopen(".myshell_history", "r");
@@ -64,9 +61,6 @@ int main()
                     pos++;
                 }
                 fclose(fp);
-                ///////////////////////////////
-                // HIST_ENTRY *comm = history_get(command[strlen(substring) + 1] - '0');
-                // command = strdup(comm->line);
                 add_history(command);
                 write_history(".myshell_history");
             }

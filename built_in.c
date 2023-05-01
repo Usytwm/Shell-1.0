@@ -99,7 +99,7 @@ void unset(char *name)
 }
 
 /**
- * Establece el proceso con el PID especificado como proceso en primer plano.
+ * @brief Establece el proceso con el PID especificado como proceso en primer plano.
  * @param pid El PID del proceso que se moverá al primer plano.
  */
 void set_foreground(pid_t pid)
@@ -108,7 +108,7 @@ void set_foreground(pid_t pid)
 }
 
 /**
- * Establece el proceso actual como proceso en segundo plano.
+ * @brief Establece el proceso actual como proceso en segundo plano.
  * @param pid El PID del proceso que se moverá al segundo plano.
  */
 void set_background(pid_t pid)
@@ -117,7 +117,7 @@ void set_background(pid_t pid)
 }
 
 /**
- * Mueve el proceso con el PID especificado al primer plano o el último proceso en segundo plano al primer plano si pid es 0.
+ * @brief Mueve el proceso con el PID especificado al primer plano o el último proceso en segundo plano al primer plano si pid es 0.
  * @param pid El PID del proceso que se moverá al primer plano o 0 para mover el último proceso en segundo plano al primer plano.
  */
 void fg(int pid)
