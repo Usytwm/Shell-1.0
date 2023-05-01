@@ -225,6 +225,7 @@ int built_in(char **arguments, int num_arguments, int background)
     {
         if (num_arguments > 1) // Si se especificó un directorio
         {
+
             if (chdir(arguments[1]) != 0) // Cambiar al directorio especificado
             {
                 printf("cd: %s: No such file or directory\n", arguments[1]); // Imprimir un mensaje de error si no se pudo cambiar al directorio
@@ -457,8 +458,8 @@ int built_in(char **arguments, int num_arguments, int background)
             else
             {
                 int i = 1;
-                char *process_auxiliar = malloc(strlen(arguments[0]) + 1); // asigno memoria para process auxiliar
-                memcpy(process_auxiliar, arguments[0], strlen(arguments[0]) + 1);
+                char *process_auxiliar = malloc(100); // asigno memoria para process auxiliar
+                memcpy(process_auxiliar, arguments[0], 100);
                 while (arguments[i] != NULL)
                 {
                     char *newc = arguments[i];
@@ -533,39 +534,50 @@ int std_method(char **arguments, int num_arguments, int background)
         }
         else if (pid == 0)
         {
-            // proceso hijo
+            // El código del proceso hijo
 
             // Redirigir la salida estándar al file
             dup2(in_fd, STDIN_FILENO);
 
             // Ejecutar el comando deseado
-            built_in(arguments, num_arguments, background);
-
-            // Si el comando falla, imprimir un mensaje de error
-            perror("execvp");
+            if (built_in(arguments, num_arguments, background) == 1)
+            {
+                perror("execvp");
+            }
             exit(1);
         }
         else
         {
-            // proceso padre
             if (!background)
             {
-                // Establecer el proceso hijo en primer plano
                 set_foreground(pid);
                 waitpid(pid, &status, WUNTRACED);
                 set_background(pid);
-            }
-            else
+            }else
             {
+                int i = 1;
+                char *process_auxiliar = malloc(100); // asigno memoria para process auxiliar
+                memcpy(process_auxiliar, arguments[0], 100);
+                while (arguments[i] != NULL)
+                {
+                    char *newc = arguments[i];
+                    strcat(process_auxiliar, " ");
+                    strcat(process_auxiliar, newc);
+                    i++;
+                }
                 // Establecer el proceso hijo en segundo plano
                 bg_pids[num_bg_pids] = pid;
-                proces[num_bg_pids] = arguments[0];
+                proces[num_bg_pids] = process_auxiliar;
                 num_bg_pids++;
                 set_background(pid);
             }
+            // El código del proceso padre
+
+            // Esperar a que el proceso hijo termine
+            //wait(NULL);
 
             // Cerrar el file de salida
-            close(in_fd);
+            //close(in_fd);
         }
     }
     // Abrir el file de salida, si es necesario
@@ -586,7 +598,7 @@ int std_method(char **arguments, int num_arguments, int background)
         }
         else if (pid == 0)
         {
-            // proceso hijo
+            // El código del proceso hijo
 
             // Redirigir la salida estándar al file
             dup2(out_fd, STDOUT_FILENO);
@@ -595,32 +607,41 @@ int std_method(char **arguments, int num_arguments, int background)
             if (built_in(arguments, num_arguments, background) == 1)
             {
                 perror("execvp");
-                exit(1);
             }
-            // built_in(arguments, num_arguments, background);
-
+            exit(1);
             // Si el comando falla, imprimir un mensaje de error
         }
         else
         {
-            // proceso padre
+            // El código del proceso padre
             if (!background)
             {
-                // Establecer el proceso hijo en primer plano
                 set_foreground(pid);
                 waitpid(pid, &status, WUNTRACED);
                 set_background(pid);
             }
             else
             {
+                int i = 1;
+                char *process_auxiliar = malloc(100); // asigno memoria para process auxiliar
+                memcpy(process_auxiliar, arguments[0], 100);
+                while (arguments[i] != NULL)
+                {
+                    char *newc = arguments[i];
+                    strcat(process_auxiliar, " ");
+                    strcat(process_auxiliar, newc);
+                    i++;
+                }
                 // Establecer el proceso hijo en segundo plano
                 bg_pids[num_bg_pids] = pid;
-                proces[num_bg_pids] = arguments[0];
+                proces[num_bg_pids] = process_auxiliar;
                 num_bg_pids++;
                 set_background(pid);
-            }
+            }// Esperar a que el proceso hijo termine
+            //wait(NULL);
+
             // Cerrar el file de salida
-            close(out_fd);
+            //close(out_fd);
         }
     }
     else
