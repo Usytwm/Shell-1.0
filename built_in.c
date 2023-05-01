@@ -375,7 +375,6 @@ int built_in(char **arguments, int num_arguments, int background)
     else if (strcmp(arguments[0], "jobs") == 0)
     {
         jobs();
-        // return 0;
     }
     else if (strcmp(arguments[0], "fg") == 0)
     {
@@ -385,41 +384,6 @@ int built_in(char **arguments, int num_arguments, int background)
         else
             fg(atoi(arguments[1]));
     }
-    /*else if (strcmp(arguments[0], "ls") == 0)
-    {
-        DIR *dir;
-        struct dirent *ent;
-
-        if ((dir = opendir(".")) != NULL)
-        {
-            // leer todos los archivos en el directorio actual
-            while ((ent = readdir(dir)) != NULL) {
-                printf("%s\n", ent->d_name);
-            }
-            closedir(dir);
-        }
-        else
-        {
-            // si no se puede abrir el directorio, imprimir un mensaje de error
-            perror("ls");
-            return 1;
-        }
-        return 0;
-    }
-    else if (strcmp(arguments[0], "pwd") == 0)
-    {
-        char cwd[1024];
-        if (getcwd(cwd, sizeof(cwd)) != NULL)
-        {
-            printf("%s\n", cwd);
-        }
-        else
-        {
-            perror("getcwd() error");
-            return 1;
-        }
-        return 0;
-    }*/
     else // Si el comando no es "exit" ni "cd"
     {
         pid_t pid = fork(); // Crear un nuevo proceso hijo
@@ -549,13 +513,6 @@ int std_method(char **arguments, int num_arguments, int background)
                 num_bg_pids++;
                 set_background(pid);
             }
-            // El código del proceso padre
-
-            // Esperar a que el proceso hijo termine
-            // wait(NULL);
-
-            // Cerrar el file de salida
-            // close(in_fd);
         }
     }
     // Abrir el file de salida, si es necesario
@@ -606,10 +563,6 @@ int std_method(char **arguments, int num_arguments, int background)
                 num_bg_pids++;
                 set_background(pid);
             } // Esperar a que el proceso hijo termine
-            // wait(NULL);
-
-            // Cerrar el file de salida
-            // close(out_fd);
         }
     }
     else
