@@ -37,7 +37,20 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
     int len = 0; //creo un indice para ir construyendo auxiliar1
 
     process_auxiliar(arguments, last_null, num_arguments, auxiliar1, &len);
-
+    while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
+    {
+        int l = Process(pid_gen);
+        printf("[%d] Done -> %s\n", il++, proces[l]);
+        fg(pid_gen);
+        for (int j = num_bg_pids - 1; j > 0; j--)
+        {
+            bg_pids[j - 1] = bg_pids[j];
+            if (j - 2 >= 0)
+            {
+                proces[j - 2] = proces[j - 1];
+            }
+        }
+    }
     int std_status = std_method(auxiliar1, len, background);
     if (std_status == 1)
         std_status = built_in(auxiliar1, len, background);

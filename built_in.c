@@ -197,21 +197,6 @@ int Process(pid_t pid)
 int built_in(char **arguments, int num_arguments, int background)
 {
     int status; // Estado de finalización del proceso hijo
-    int l = 0;
-    while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
-    {
-        l = Process(pid_gen);
-        printf("[%d] Done -> %s\n", il++, proces[l]);
-        fg(pid_gen);
-        for (int j = num_bg_pids - 1; j > 0; j--)
-        {
-            bg_pids[j - 1] = bg_pids[j];
-            if (j - 2 >= 0)
-            {
-                proces[j - 2] = proces[j - 1];
-            }
-        }
-    }
 
     if (strcmp(arguments[0], "exit") == 0) // Si el comando es "exit"
     {
@@ -553,31 +538,23 @@ int std_method(char **arguments, int num_arguments, int background)
                 set_foreground(pid);
                 waitpid(pid, &status, WUNTRACED);
                 set_background(pid);
-            }else
+            }
+            else
             {
-                int i = 1;
-                char *process_auxiliar = malloc(100); // asigno memoria para process auxiliar
-                memcpy(process_auxiliar, arguments[0], 100);
-                while (arguments[i] != NULL)
-                {
-                    char *newc = arguments[i];
-                    strcat(process_auxiliar, " ");
-                    strcat(process_auxiliar, newc);
-                    i++;
-                }
+
                 // Establecer el proceso hijo en segundo plano
                 bg_pids[num_bg_pids] = pid;
-                proces[num_bg_pids] = process_auxiliar;
+                proces[num_bg_pids] = "Redirigir salida";
                 num_bg_pids++;
                 set_background(pid);
             }
             // El código del proceso padre
 
             // Esperar a que el proceso hijo termine
-            //wait(NULL);
+            // wait(NULL);
 
             // Cerrar el file de salida
-            //close(in_fd);
+            // close(in_fd);
         }
     }
     // Abrir el file de salida, si es necesario
@@ -622,26 +599,16 @@ int std_method(char **arguments, int num_arguments, int background)
             }
             else
             {
-                int i = 1;
-                char *process_auxiliar = malloc(100); // asigno memoria para process auxiliar
-                memcpy(process_auxiliar, arguments[0], 100);
-                while (arguments[i] != NULL)
-                {
-                    char *newc = arguments[i];
-                    strcat(process_auxiliar, " ");
-                    strcat(process_auxiliar, newc);
-                    i++;
-                }
                 // Establecer el proceso hijo en segundo plano
                 bg_pids[num_bg_pids] = pid;
-                proces[num_bg_pids] = process_auxiliar;
+                proces[num_bg_pids] = "Redireccion de entrada";
                 num_bg_pids++;
                 set_background(pid);
-            }// Esperar a que el proceso hijo termine
-            //wait(NULL);
+            } // Esperar a que el proceso hijo termine
+            // wait(NULL);
 
             // Cerrar el file de salida
-            //close(out_fd);
+            // close(out_fd);
         }
     }
     else
