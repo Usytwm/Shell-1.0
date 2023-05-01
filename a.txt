@@ -1,10 +1,0 @@
-[?2004hmy-prompt $ Makefile
-README.md
-a.txt
-built_in.c
-main
-main.c
-parse_command.c
-[?2004l[1] Done -> ls
-p: command not found
-[?2004hmy-prompt $ 
