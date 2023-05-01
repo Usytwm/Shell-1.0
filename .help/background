@@ -1,5 +1,7 @@
+
 Our shell allows running processes in the background. To declare a process as a background process, the user writes the `&` operator at the end of the input, which sends the command with `background = 1` status to the methods that take into account the execution mode.
 
 In addition, there is a command called `jobs` that returns the background processes with their `pid`, which can later be used by the command `fg <pid>` to bring the process `<pid>` to the foreground. The `fg` command can also be written alone, which brings the last inserted background process to the foreground.
 
 The implementation consists of passing the `background` state (0 or 1) to the execution of the commands and storing the background processes in an array. The rest of the operations are performed on the array of processes, and everything happens in a fairly normal way.
+
