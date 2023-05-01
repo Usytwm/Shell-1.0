@@ -47,10 +47,14 @@ int pipes_func(char *(*args)[MAX_NUM_ARGUMENTS], int num_cmds, int background)
                 close(pipes[j][1]);
             }
 
-            if (execvp(args[i][0], args[i]) == -1)
+            if (built_in(args[i], num_cmds, background) == 0)
+            {
+                exit(EXIT_SUCCESS);
+            }
+            /*if (execvp(args[i][0], args[i]) == -1)
             {
                 return EXIT_FAILURE;
-            }
+            }*/
         }
     }
 
@@ -66,8 +70,47 @@ int pipes_func(char *(*args)[MAX_NUM_ARGUMENTS], int num_cmds, int background)
     {
         wait(NULL);
     }
+    int status;
+    pid_t pidt = getpid();
+    if (!background)
+    {
+        // Establecer el proceso hijo en primer plano
+        set_foreground(pidt);
+        waitpid(pidt, &status, WUNTRACED);
+        set_background(pidt);
+    }
+    else
+    {
+        // Establecer el proceso hijo en segundo plano
+        bg_pids[num_bg_pids] = pidt;
+        proces[num_bg_pids] = "Pipes";
+        num_bg_pids++;
+        set_background(pidt);
+    }
 
     return EXIT_SUCCESS;
+}
+
+void ended_processes()
+{
+    while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0 || num_bg_pids != 0) // terminar el proceso
+    {
+        int l = Process(pid_gen);
+        if (l == -1)
+        {
+            l = num_bg_pids - 1;
+        }
+        printf("[%d] Done -> %s\n", il++, proces[l]);
+        fg(l);
+        for (int j = num_bg_pids - 1; j > 0; j--)
+        {
+            bg_pids[j - 1] = bg_pids[j];
+            if (j - 2 >= 0)
+            {
+                proces[j - 2] = proces[j - 1];
+            }
+        }
+    }
 }
 
 /**
@@ -105,20 +148,7 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
     int len = 0;                        // creo un indice para ir construyendo auxiliar1
 
     auxiliar_process(arguments, last_null, num_arguments, auxiliar1, &len);
-    while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
-    {
-        int l = Process(pid_gen);
-        printf("[%d] Done -> %s\n", il++, proces[l]);
-        fg(pid_gen);
-        for (int j = num_bg_pids - 1; j > 0; j--)
-        {
-            bg_pids[j - 1] = bg_pids[j];
-            if (j - 2 >= 0)
-            {
-                proces[j - 2] = proces[j - 1];
-            }
-        }
-    }
+
     int std_status = std_method(auxiliar1, len, background);
     if (std_status == 1)
         std_status = built_in(auxiliar1, len, background);
@@ -133,7 +163,9 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
  */
 void tokenized(char *parsed_arguments, int background)
 {
-    char *operators[] = {"then", "else", "end" "||", "&&", NULL};
+    char *operators[] = {"then", "else", "end"
+                                         "||",
+                         "&&", NULL};
     char *token;
     int piped_len = 0;
     char *piped_args[MAX_NUM_ARGUMENTS][MAX_NUM_ARGUMENTS];
@@ -161,7 +193,7 @@ void tokenized(char *parsed_arguments, int background)
 
         arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
 
-        if(piped != 0)
+        if (piped != 0)
         {
             int end_pipe = 0;
             int if_flag = 0;
@@ -180,7 +212,7 @@ void tokenized(char *parsed_arguments, int background)
                     break;
                 }
             }
-            
+
             if (if_flag == 1)
                 continue;
             else if (end_pipe == 1)
@@ -232,7 +264,7 @@ void tokenized(char *parsed_arguments, int background)
         {
             if (strcmp(arguments[last_null], "if") == 0)
             {
-                if_status += 1;            // esto me da cuantos if tengo actualmente
+                if_status += 1; // esto me da cuantos if tengo actualmente
                 int std_status;
                 if (piped == 0 && piped_out == 1)
                     std_status = 0;
@@ -302,11 +334,13 @@ void tokenized(char *parsed_arguments, int background)
     }
     arguments[num_arguments] = NULL; // Agregar un puntero nulo al final del arreglo de argumentos
 
+    ended_processes();
+
     if (strcmp(arguments[num_arguments - 1], "&") == 0)
         background = 1;
     else
         background = 0;
-    
+
     if (background)
     {
         arguments[num_arguments - 1] = '\0';
@@ -325,11 +359,14 @@ void tokenized(char *parsed_arguments, int background)
         {
             piped_args[piped_len][i] = args2[i];
         }
-        
+
         piped_len++;
 
         if (pipes_func(piped_args, piped_len, background) == EXIT_SUCCESS)
+        {
+            // fg(bg_pids[num_bg_pids - 1], 1);
             return;
+        }
     }
 
     if (if_status > 0)

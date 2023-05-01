@@ -156,7 +156,6 @@ void fg(int pid)
                 bg_pids[num_bg_pids - 1] = 0;
                 proces[num_bg_pids] = NULL;
                 num_bg_pids--;
-
                 return;
             }
         }
