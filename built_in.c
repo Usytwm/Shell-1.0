@@ -329,6 +329,7 @@ int built_in(char **arguments, int num_arguments, int background)
                     }
 
                     set(arguments[1], val);
+                    fclose(fp);
                 }
                 else
                 {
