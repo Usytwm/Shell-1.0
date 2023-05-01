@@ -1,7 +1,0 @@
-Makefile
-README.md
-a.txt
-built_in.c
-main
-main.c
-parse_command.c
