@@ -5,13 +5,15 @@
 #define MAX_COMMAND_LENGTH 100
 ///////////////////////
 #define MAX_CMDS 10
-char input[1024];
+char *input;
 char *cmds[MAX_CMDS];
 int num_cmds = 0;
 int pipes[MAX_CMDS - 1][2];
 
 int Pipes(char input[MAX_NUM_ARGUMENTS], char *cmds[MAX_CMDS], int num_cmds, int pipes[MAX_CMDS - 1][2])
 {
+    int status = 0;
+    int background = 0;
     char *cmd = strtok(input, "|");
     while (cmd != NULL && num_cmds < MAX_CMDS)
     {
@@ -173,10 +175,9 @@ void tokenized(char *parsed_arguments, int background)
     int first_true = 0;
     int piped = 0;
 
-    if (Pipes(parsed_arguments, cmds, num_arguments, pipes) == EXIT_SUCCESS)
-    {
-        return;
-    }
+    input = malloc(strlen(parsed_arguments) + 1); // asigno memoria para values
+    memcpy(input, parsed_arguments, strlen(parsed_arguments) + 1);
+
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
     while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
@@ -281,7 +282,7 @@ void tokenized(char *parsed_arguments, int background)
         background = 1;
     else
         background = 0;
-    
+
     if (background)
     {
         arguments[num_arguments - 1] = '\0';
@@ -290,46 +291,9 @@ void tokenized(char *parsed_arguments, int background)
 
     if (piped != 0)
     {
-        int fd[2];
-
-        char *args1[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
-        int len1 = 0;                   // creo un indice para ir construyendo auxiliar1
-
-        process_auxiliar(arguments, &last_null, piped, args1, &len1);
-
-        char *args2[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
-        int len2 = 0;                   // creo un indice para ir construyendo auxiliar1
-        int aux1 = piped;
-
-        process_auxiliar(arguments, &aux1, num_arguments, args2, &len2);
-
-        if (pipe(fd) == -1)
+        if (Pipes(parsed_arguments, cmds, num_arguments, pipes) == EXIT_SUCCESS)
         {
-            fprintf(stderr, "Error creating pipe\n");
-            exit(EXIT_FAILURE);
-        }
-
-        pid_t pid = fork();
-
-        if (pid == -1)
-        {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pid == 0)
-        {
-            // Proceso hijo
-            close(fd[0]);               // Cerramos el extremo de lectura del pipe
-            dup2(fd[1], STDOUT_FILENO); // Redirigimos la salida extremo de escritura del pipe
-            execvp(args1[0], args1);    // Ejecutamos el primer comando
-        }
-        else
-        {
-            // Proceso padre
-            close(fd[1]);              // Cerramos el extremo de escritura del pipe
-            dup2(fd[0], STDIN_FILENO); // Redirigimos la entrada estándar al extremo de lectura del pipe
-            execvp(args2[0], args2);   // Ejecutamos el segundo comando
+            return;
         }
     }
 
