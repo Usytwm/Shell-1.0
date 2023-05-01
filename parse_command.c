@@ -3,21 +3,10 @@
 #define MAX_NUM_ARGUMENTS 50
 #define MAX_HISTORY_LENGTH 10
 #define MAX_COMMAND_LENGTH 100
-///////////////////////
-#define MAX_CMDS 10
-char input[1024];
-char *cmds[MAX_CMDS];
-int num_cmds = 0;
-int pipes[MAX_CMDS - 1][2];
 
-int Pipes(char input[MAX_NUM_ARGUMENTS], char *cmds[MAX_CMDS], int num_cmds, int pipes[MAX_CMDS - 1][2])
+int pipes_func(char *(*args)[MAX_NUM_ARGUMENTS], int num_cmds, int background)
 {
-    char *cmd = strtok(input, "|");
-    while (cmd != NULL && num_cmds < MAX_CMDS)
-    {
-        cmds[num_cmds++] = cmd;
-        cmd = strtok(NULL, "|");
-    }
+    int pipes[MAX_COMMAND_LENGTH - 1][2];
 
     // Crear los pipes
     for (int i = 0; i < num_cmds - 1; i++)
@@ -57,25 +46,11 @@ int Pipes(char input[MAX_NUM_ARGUMENTS], char *cmds[MAX_CMDS], int num_cmds, int
                 close(pipes[j][0]);
                 close(pipes[j][1]);
             }
-            // Ejecutar el comando
-            char cmd_copy[MAX_COMMAND_LENGTH];
-            strncpy(cmd_copy, cmds[i], sizeof(cmd_copy));
-            char *args[MAX_COMMAND_LENGTH];
-            int num_args = 0;
-            char *arg = strtok(cmd_copy, " ");
-            while (arg != NULL && num_args < MAX_COMMAND_LENGTH)
-            {
-                args[num_args++] = arg;
-                arg = strtok(NULL, " ");
-            }
-            args[num_args] = NULL;
-            if (execvp(args[0], args) == -1)
+
+            if (execvp(args[i][0], args[i]) == -1)
             {
                 return EXIT_FAILURE;
             }
-
-            // perror("execvp");
-            // exit(EXIT_FAILURE);
         }
     }
 
@@ -104,7 +79,7 @@ int Pipes(char input[MAX_NUM_ARGUMENTS], char *cmds[MAX_CMDS], int num_cmds, int
  * @param len Indice de auxiliar1
  * @return No devuelve nada
  */
-void process_auxiliar(char **arguments, int *last_null, int num_arguments, char **auxiliar1, int *len)
+void auxiliar_process(char **arguments, int *last_null, int num_arguments, char **auxiliar1, int *len)
 {
     int i = *last_null + 1;     // creo un indice q empieza en el token siguiente al ultimo null
     *last_null = num_arguments; // actualizo el ultimo null como el operador actual
@@ -129,7 +104,7 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
     char *auxiliar1[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
     int len = 0;                        // creo un indice para ir construyendo auxiliar1
 
-    process_auxiliar(arguments, last_null, num_arguments, auxiliar1, &len);
+    auxiliar_process(arguments, last_null, num_arguments, auxiliar1, &len);
     while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
     {
         int l = Process(pid_gen);
@@ -158,9 +133,10 @@ int tokenized_util(char **arguments, int *last_null, int num_arguments, int back
  */
 void tokenized(char *parsed_arguments, int background)
 {
-    char *operators[] = {"|", "||", "&&", NULL};
+    char *operators[] = {"then", "else", "end" "||", "&&", NULL};
     char *token;
-    int status = 0;
+    int piped_len = 0;
+    char *piped_args[MAX_NUM_ARGUMENTS][MAX_NUM_ARGUMENTS];
     char *arguments[MAX_NUM_ARGUMENTS]; // Arreglo de punteros a los argumentos del comando
     int num_arguments = 0;              // Inicializar el número de argumentos
     int last_null = -1;
@@ -172,11 +148,8 @@ void tokenized(char *parsed_arguments, int background)
     int not_else = 0;
     int first_true = 0;
     int piped = 0;
+    int piped_out = 0;
 
-    if (Pipes(parsed_arguments, cmds, num_arguments, pipes) == EXIT_SUCCESS)
-    {
-        return;
-    }
     token = strtok(parsed_arguments, " "); // Obtener el primer token del comando
 
     while (token != NULL && num_arguments < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
@@ -188,10 +161,59 @@ void tokenized(char *parsed_arguments, int background)
 
         arguments[num_arguments] = token; // Agregar el token al arreglo de argumentos
 
+        if(piped != 0)
+        {
+            int end_pipe = 0;
+            int if_flag = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                if (strcmp(token, "if") == 0)
+                {
+                    last_null++;
+                    num_arguments++;           // Incrementar el número de argumentos
+                    token = strtok(NULL, " "); // Obtener el siguiente token del comando
+                    if_flag = 1;
+                }
+                else if (strcmp(token, operators[i]) == 0)
+                {
+                    end_pipe = 1;
+                    break;
+                }
+            }
+            
+            if (if_flag == 1)
+                continue;
+            else if (end_pipe == 1)
+            {
+                char *args1[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
+                int len1 = 0;                   // creo un indice para ir construyendo auxiliar1
+                auxiliar_process(arguments, &last_null, num_arguments, args1, &len1);
+                for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
+                {
+                    piped_args[piped_len][i] = args1[i];
+                }
+                if (pipes_func(piped_args, piped_len, background) == EXIT_SUCCESS)
+                {
+                    piped_out = 1;
+                    piped = 0;
+                }
+            }
+        }
+
         if (strcmp(token, "|") == 0)
         {
             piped = num_arguments;
+            char *args1[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
+            int len1 = 0;                   // creo un indice para ir construyendo auxiliar1
+            auxiliar_process(arguments, &last_null, piped, args1, &len1);
+            for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
+            {
+                piped_args[piped_len][i] = args1[i];
+            }
+            piped_len++;
         }
+        else if (strcmp(token, "if") == 0)
+            last_null++;
         else if (strcmp(token, "&&") == 0)
         {
             int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
@@ -208,11 +230,14 @@ void tokenized(char *parsed_arguments, int background)
         }
         else if (strcmp(token, "then") == 0 && first_true == 0)
         {
-            if (strcmp(arguments[last_null + 1], "if") == 0)
+            if (strcmp(arguments[last_null], "if") == 0)
             {
                 if_status += 1;            // esto me da cuantos if tengo actualmente
-                last_null = last_null + 1; // actualizo el ultimo null
-                int std_status = tokenized_util(arguments, &last_null, num_arguments, background);
+                int std_status;
+                if (piped == 0 && piped_out == 1)
+                    std_status = 0;
+                else
+                    std_status = tokenized_util(arguments, &last_null, num_arguments, background);
                 else_status = 0;     // actualizo los estados de else
                 else_before_end = 0; // para el nuevo bloque de if
                 if (std_status == 1) // si hubo un error en la condicion
@@ -290,47 +315,21 @@ void tokenized(char *parsed_arguments, int background)
 
     if (piped != 0)
     {
-        int fd[2];
-
-        char *args1[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
-        int len1 = 0;                   // creo un indice para ir construyendo auxiliar1
-
-        process_auxiliar(arguments, &last_null, piped, args1, &len1);
-
         char *args2[MAX_NUM_ARGUMENTS]; // construyo el comando simple que voy a procesar
         int len2 = 0;                   // creo un indice para ir construyendo auxiliar1
         int aux1 = piped;
 
-        process_auxiliar(arguments, &aux1, num_arguments, args2, &len2);
+        auxiliar_process(arguments, &aux1, num_arguments, args2, &len2);
 
-        if (pipe(fd) == -1)
+        for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
         {
-            fprintf(stderr, "Error creating pipe\n");
-            exit(EXIT_FAILURE);
+            piped_args[piped_len][i] = args2[i];
         }
+        
+        piped_len++;
 
-        pid_t pid = fork();
-
-        if (pid == -1)
-        {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pid == 0)
-        {
-            // Proceso hijo
-            close(fd[0]);               // Cerramos el extremo de lectura del pipe
-            dup2(fd[1], STDOUT_FILENO); // Redirigimos la salida extremo de escritura del pipe
-            execvp(args1[0], args1);    // Ejecutamos el primer comando
-        }
-        else
-        {
-            // Proceso padre
-            close(fd[1]);              // Cerramos el extremo de escritura del pipe
-            dup2(fd[0], STDIN_FILENO); // Redirigimos la entrada estándar al extremo de lectura del pipe
-            execvp(args2[0], args2);   // Ejecutamos el segundo comando
-        }
+        if (pipes_func(piped_args, piped_len, background) == EXIT_SUCCESS)
+            return;
     }
 
     if (if_status > 0)
@@ -357,7 +356,7 @@ void parse_command(char *command)
     int background = 0;
 
     char *token = strtok(command, ";"); // Obtener el primer token del comando
-    /////                                                 ////////////////////////////
+
     while (token != NULL && num_tok < MAX_NUM_ARGUMENTS - 1) // Mientras haya tokens y no se haya alcanzado el número máximo de argumentos
     {
         parsed_arguments[num_tok] = token; // Agregar el token al arreglo de argumentos

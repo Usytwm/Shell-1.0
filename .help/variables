@@ -1,0 +1,7 @@
+
+Our shell allows declaring variables using the syntax "set <name> <argument>", where the argument can be any string or a function of the program itself. To declare a variable as a function, the argument must be written as `<argument>`, as the backtick (`) operator guarantees that the content is a function.
+
+The implementation also allows using "get <name>" to retrieve the value of the variable "<name>", and in case it does not exist, an error message is displayed. It is also possible to use "unset <name>" to delete the variable "<name>" from the shell.
+
+All of this is done by simply taking the input and storing it in a specific memory space, which the code accesses to make changes in a straightforward manner.
+
