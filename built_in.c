@@ -11,7 +11,7 @@
 #define MAX_NUM_ARGUMENTS 50
 
 char *functions[] = {"basic", "multi-pipes", "background", "spaces",
-    "history", "ctrl+c", "chain", "if", "multi-if", "variables"};
+                     "history", "ctrl+c", "chain", "if", "multi-if", "variables"};
 
 /* Arreglo de punteros a cadenas de caracteres para las variables */
 char *vars[MAX_NUM_ARGUMENTS];
@@ -22,12 +22,25 @@ char *values[MAX_NUM_ARGUMENTS];
 /* Número de variables definidas */
 int num_vars = 0;
 
-pid_t pid_gen;//pid de los procesos
-int il = 1;//para enumear los procesos en background a la hora de imprimirlos
-pid_t bg_pids[MAX_NUM_ARGUMENTS];//procesos en segundo plano
-int num_bg_pids = 0;//cantidad de procesos en egundo plano
+/* pid de los procesos*/
+pid_t pid_gen;
 
-/* Función para definir una nueva variable */
+/*para enumear los procesos en background a la hora de imprimirlos*/
+int il = 1;
+
+char *proces[MAX_NUM_ARGUMENTS];
+
+/*procesos en segundo plano*/
+pid_t bg_pids[MAX_NUM_ARGUMENTS];
+
+/*cantidad de procesos en egundo plano*/
+int num_bg_pids = 0;
+
+/**
+ * @brief Función para definir una nueva variable
+ * @param name Nombre de la variable a definir
+ * @param value Valor asignado a la variable
+ */
 void set(char *name, char *value)
 {
     if (num_vars < MAX_NUM_ARGUMENTS)
@@ -42,7 +55,10 @@ void set(char *name, char *value)
     }
 }
 
-/* Función para obtener el valor de una variable */
+/**
+ * @brief Función para obtener el valor de una variable
+ * @param name Nombre de la variable a obtener
+ */
 char *get(char *name)
 {
     int i;
@@ -56,7 +72,10 @@ char *get(char *name)
     return "0";
 }
 
-/* Función para eliminar una variable */
+/**
+ * @brief Función para eliminar una variable
+ * @param name Nombre de la variable a eliminar
+ */
 void unset(char *name)
 {
     int i;
@@ -79,27 +98,40 @@ void unset(char *name)
     }
 }
 
+/**
+ * Establece el proceso con el PID especificado como proceso en primer plano.
+ * @param pid El PID del proceso que se moverá al primer plano.
+ */
 void set_foreground(pid_t pid)
 {
     tcsetpgrp(STDIN_FILENO, getpgid(pid));
 }
 
+/**
+ * Establece el proceso actual como proceso en segundo plano.
+ * @param pid El PID del proceso que se moverá al segundo plano.
+ */
 void set_background(pid_t pid)
 {
     tcsetpgrp(STDIN_FILENO, getpgid(getpid()));
 }
 
+/**
+ * Mueve el proceso con el PID especificado al primer plano o el último proceso en segundo plano al primer plano si pid es 0.
+ * @param pid El PID del proceso que se moverá al primer plano o 0 para mover el último proceso en segundo plano al primer plano.
+ */
 void fg(int pid)
 {
     int i;
     pid_t fg_pid;
-
+    char *pro;
     if (pid == 0)
     {
         // Mover el último proceso en segundo plano al primer plano
         if (num_bg_pids > 0)
         {
             fg_pid = bg_pids[num_bg_pids - 1];
+            pro = proces[num_bg_pids - 1];
             num_bg_pids--;
             set_foreground(fg_pid);
             waitpid(fg_pid, NULL, WUNTRACED);
@@ -121,33 +153,39 @@ void fg(int pid)
                 set_foreground(fg_pid);
                 waitpid(fg_pid, NULL, WUNTRACED);
                 set_background(getpid());
-                for (int j = num_bg_pids - 1; j > 0; j--)
-                {
-                    bg_pids[j - 1] = bg_pids[j];
-                    if (j - 2 >= 0)
-                    {
-                        // jobsarg[j - 2] = jobsarg[j - 1];
-                    }
-                }
                 bg_pids[num_bg_pids - 1] = 0;
-                // jobsarg[num_bg_pids] = NULL;
-
+                proces[num_bg_pids] = NULL;
                 num_bg_pids--;
 
                 return;
             }
         }
-        printf("No se encontró el proceso con el PID especificado\n");
+        // printf("No se encontró el proceso con el PID especificado\n");
     }
 }
 
+/**
+ * Muestra una lista de todos los procesos en segundo plano.
+ */
 void jobs()
 {
     int i;
     for (i = 0; i < num_bg_pids; i++)
     {
-        printf("[%d] %d\n", i + il + 1, bg_pids[i]);
+        printf("[%d] %s -> %d\n", i, proces[i], bg_pids[i]);
     }
+}
+
+int Process(pid_t pid)
+{
+    for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
+    {
+        if (bg_pids[i] == pid)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 /**
@@ -159,16 +197,24 @@ void jobs()
 int built_in(char **arguments, int num_arguments, int background)
 {
     int status; // Estado de finalización del proceso hijo
-
+    int l = 0;
     while ((pid_gen = waitpid(-1, NULL, WNOHANG)) > 0) // terminar el proceso
     {
-        printf("[%d] Done\n", il++);
+        l = Process(pid_gen);
+        printf("[%d] Done -> %s\n", il++, proces[l]);
         fg(pid_gen);
+        for (int j = num_bg_pids - 1; j > 0; j--)
+        {
+            bg_pids[j - 1] = bg_pids[j];
+            if (j - 2 >= 0)
+            {
+                proces[j - 2] = proces[j - 1];
+            }
+        }
     }
 
     if (strcmp(arguments[0], "exit") == 0) // Si el comando es "exit"
     {
-        //write_history(".myshell_history");
         exit(0); // Salir del shell
     }
     else if (strcmp(arguments[0], "true") == 0)
@@ -214,11 +260,13 @@ int built_in(char **arguments, int num_arguments, int background)
         {
             sprintf(route, ".help/%s", "help");
             file = fopen(route, "r");
-            if (file == NULL) {
+            if (file == NULL)
+            {
                 printf("Error: file is missing\n");
                 return 1;
             }
-            while (fgets(linea, 100, file) != NULL) {
+            while (fgets(linea, 100, file) != NULL)
+            {
                 printf("%s", linea);
             }
             fclose(file);
@@ -232,11 +280,13 @@ int built_in(char **arguments, int num_arguments, int background)
                 {
                     sprintf(route, ".help/%s", functions[i]);
                     file = fopen(route, "r");
-                    if (file == NULL) {
+                    if (file == NULL)
+                    {
                         printf("Error: file is missing\n");
                         return 1;
                     }
-                    while (fgets(linea, 100, file) != NULL) {
+                    while (fgets(linea, 100, file) != NULL)
+                    {
                         printf("%s", linea);
                     }
                     fclose(file);
@@ -287,13 +337,12 @@ int built_in(char **arguments, int num_arguments, int background)
                     memcpy(var, values, strlen(values) + 1);
                     while (fgets(var, 100, fp) != NULL)
                     {
-                        var[strlen(var)-1]='\0';
+                        var[strlen(var) - 1] = '\0';
                         strcat(val, var);
                         strcat(val, " ");
                     }
 
                     set(arguments[1], val);
-                    
                 }
                 else
                 {
@@ -362,7 +411,7 @@ int built_in(char **arguments, int num_arguments, int background)
             }
             closedir(dir);
         }
-        else 
+        else
         {
             // si no se puede abrir el directorio, imprimir un mensaje de error
             perror("ls");
@@ -393,7 +442,7 @@ int built_in(char **arguments, int num_arguments, int background)
             if (execvp(arguments[0], arguments) == -1) // Ejecutar el comando con los argumentos especificados
             {
                 printf("%s: command not found\n", arguments[0]); // Imprimir un mensaje de error si no se pudo ejecutar el comando
-                return 1;                                         // Salir del proceso hijo con un estado de finalización de 1
+                return 1;                                        // Salir del proceso hijo con un estado de finalización de 1
             }
         }
         else if (pid > 0) // Si se está ejecutando en el proceso padre
@@ -407,8 +456,19 @@ int built_in(char **arguments, int num_arguments, int background)
             }
             else
             {
+                int i = 1;
+                char *process_auxiliar = malloc(strlen(arguments[0]) + 1); // asigno memoria para process auxiliar
+                memcpy(process_auxiliar, arguments[0], strlen(arguments[0]) + 1);
+                while (arguments[i] != NULL)
+                {
+                    char *newc = arguments[i];
+                    strcat(process_auxiliar, " ");
+                    strcat(process_auxiliar, newc);
+                    i++;
+                }
                 // Establecer el proceso hijo en segundo plano
                 bg_pids[num_bg_pids] = pid;
+                proces[num_bg_pids] = process_auxiliar;
                 num_bg_pids++;
                 set_background(pid);
             }
@@ -473,7 +533,7 @@ int std_method(char **arguments, int num_arguments, int background)
         }
         else if (pid == 0)
         {
-            // El código del proceso hijo
+            // proceso hijo
 
             // Redirigir la salida estándar al file
             dup2(in_fd, STDIN_FILENO);
@@ -487,10 +547,22 @@ int std_method(char **arguments, int num_arguments, int background)
         }
         else
         {
-            // El código del proceso padre
-
-            // Esperar a que el proceso hijo termine
-            wait(NULL);
+            // proceso padre
+            if (!background)
+            {
+                // Establecer el proceso hijo en primer plano
+                set_foreground(pid);
+                waitpid(pid, &status, WUNTRACED);
+                set_background(pid);
+            }
+            else
+            {
+                // Establecer el proceso hijo en segundo plano
+                bg_pids[num_bg_pids] = pid;
+                proces[num_bg_pids] = arguments[0];
+                num_bg_pids++;
+                set_background(pid);
+            }
 
             // Cerrar el file de salida
             close(in_fd);
@@ -514,25 +586,39 @@ int std_method(char **arguments, int num_arguments, int background)
         }
         else if (pid == 0)
         {
-            // El código del proceso hijo
+            // proceso hijo
 
             // Redirigir la salida estándar al file
             dup2(out_fd, STDOUT_FILENO);
 
             // Ejecutar el comando deseado
-            built_in(arguments, num_arguments, background);
+            if (built_in(arguments, num_arguments, background) == 1)
+            {
+                perror("execvp");
+                exit(1);
+            }
+            // built_in(arguments, num_arguments, background);
 
             // Si el comando falla, imprimir un mensaje de error
-            perror("execvp");
-            exit(1);
         }
         else
         {
-            // El código del proceso padre
-
-            // Esperar a que el proceso hijo termine
-            wait(NULL);
-
+            // proceso padre
+            if (!background)
+            {
+                // Establecer el proceso hijo en primer plano
+                set_foreground(pid);
+                waitpid(pid, &status, WUNTRACED);
+                set_background(pid);
+            }
+            else
+            {
+                // Establecer el proceso hijo en segundo plano
+                bg_pids[num_bg_pids] = pid;
+                proces[num_bg_pids] = arguments[0];
+                num_bg_pids++;
+                set_background(pid);
+            }
             // Cerrar el file de salida
             close(out_fd);
         }
